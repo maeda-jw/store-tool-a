@@ -628,7 +628,7 @@ function nowStr(){const d=new Date();return `${d.getFullYear()}/${String(d.getMo
 // 初期化
 // ============================================================
 function getAutoUrl(){
-  // 1. URLパラメータ ?gas=... から取得（GitHub Pages等の外部ホスティング用）
+  // 1. URLパラメータ ?gas=... から取得（GitHub Pages等の外部ホスティング用）— 最優先
   try{
     const params=new URLSearchParams(location.search);
     const gasParam=params.get('gas');
@@ -647,21 +647,43 @@ function getAutoUrl(){
   return '';
 }
 
+// URLパラメータからユーザー名を取得
+function getAutoUser(){
+  try{
+    const params=new URLSearchParams(location.search);
+    const userParam=params.get('user');
+    if(userParam && userParam.trim()) return userParam.trim();
+  }catch(e){}
+  return '';
+}
+
 function init(){
   ldCfg();
   setLang(lang);
 
-  // GAS配信時はURLを自動セット → URL入力欄を非表示にする
+  // GAS URLを自動セット（URLパラメータ優先）
   const autoUrl=getAutoUrl();
   if(autoUrl){
     cfg.url=autoUrl;
     svCfg();
     document.getElementById('setup-url').value=autoUrl;
-    document.getElementById('setup-url-row').style.display='none'; // URL欄を隠す
   }
 
-  // GAS URLが無くてもURL入力欄は常に非表示（設定タブから変更可能）
+  // URLパラメータからユーザー名も取得可能
+  const autoUser=getAutoUser();
+  if(autoUser && !cfg.user){
+    cfg.user=autoUser;
+    svCfg();
+  }
+
+  // URL入力欄は常に非表示（設定タブから変更可能）
   document.getElementById('setup-url-row').style.display='none';
+
+  // GAS URLが検出済みなら接続状態を表示
+  if(cfg.url){
+    document.getElementById('s-desc').innerHTML=
+      '✅ GASに接続済み<br><span style="font-size:.78rem;color:var(--ok)">'+cfg.url.replace(/https:\/\/script\.google\.com\/macros\/s\/(.{8}).+/,'https://script.../$1...')+'</span><br><span style="font-size:.82rem">利用者名を入力してください</span>';
+  }
 
   if(!cfg.user){
     // 名前が未設定 → セットアップ画面を表示（名前のみ入力）
@@ -696,8 +718,15 @@ function saveSt(){
 }
 function resetSt(){if(!confirm('設定をリセットしますか？'))return;localStorage.removeItem(CK);location.reload();}
 function copyShare(){
-  const info=`GAS URL: ${cfg.url}`;
-  navigator.clipboard.writeText(info).then(()=>showToast(t('msg_copied'),'ok')).catch(()=>prompt('Copy:',cfg.url));
+  // GitHub Pages版なら直接アクセスURLを生成（?gas=...&user=...）
+  let shareUrl='';
+  const baseUrl=location.origin+location.pathname;
+  if(cfg.url && baseUrl.includes('github.io')){
+    shareUrl=baseUrl+'?gas='+encodeURIComponent(cfg.url);
+    if(cfg.user) shareUrl+='&user='+encodeURIComponent(cfg.user);
+  }
+  const info=shareUrl || ('GAS URL: '+cfg.url);
+  navigator.clipboard.writeText(info).then(()=>showToast(t('msg_copied'),'ok')).catch(()=>prompt('Copy:',info));
 }
 
 // ============================================================
