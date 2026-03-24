@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ストア管理ツール（Aゾーン）</title>
 
 <!-- ===== PWA：アプリ化対応 ===== -->
@@ -57,12 +57,12 @@ body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;back
 .fc:focus{outline:none;border-color:var(--pri-l);box-shadow:0 0 0 3px rgba(41,128,185,.15)}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{width:100%;border-collapse:collapse;font-size:.76rem;table-layout:fixed}
+table{width:100%;border-collapse:collapse;font-size:.76rem;table-layout:fixed;min-width:580px}
 th{background:var(--pri);color:#fff;padding:4px 5px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;cursor:pointer;font-size:.72rem}
 th:hover{background:var(--pri-l)}
 td{padding:3px 5px;border-bottom:1px solid var(--bdr);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* 列幅指定（操作,✓,ロケ,商品コード,ストア場所,数量,日時,ロット） */
-th:nth-child(1){width:54px}th:nth-child(2){width:30px}th:nth-child(3){width:60px}th:nth-child(4){width:auto}th:nth-child(5){width:68px}th:nth-child(6){width:36px}th:nth-child(7){width:72px}th:nth-child(8){width:60px}
+th:nth-child(1){width:54px}th:nth-child(2){width:30px}th:nth-child(3){width:60px}th:nth-child(4){min-width:120px}th:nth-child(5){width:68px}th:nth-child(6){width:36px}th:nth-child(7){width:72px}th:nth-child(8){width:60px}
 tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 .fb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .fb .fc{width:auto;flex:1;min-width:100px}.fb select{max-width:170px}
@@ -94,6 +94,12 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 .lang-sw{display:flex;gap:4px}
 .lang-btn{padding:3px 8px;border:1px solid rgba(255,255,255,.4);border-radius:4px;background:transparent;color:#fff;font-size:.7rem;cursor:pointer}
 .lang-btn.act{background:rgba(255,255,255,.3);font-weight:700}
+/* 入力モード切替ボタン（📷スキャン / ✏️手入力） */
+.input-mode-sw{display:flex;gap:2px;background:var(--bdr);border-radius:6px;padding:2px}
+.btn-mode{border:none;background:transparent;padding:3px 8px;border-radius:4px;font-size:.82rem;cursor:pointer;transition:.2s;line-height:1}
+.btn-mode.active{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+/* スキャンターゲットハイライト */
+.step-active{box-shadow:0 0 0 2px var(--acc);transition:box-shadow .2s}
 @media print{
   .hdr,.nav,.fb,.no-p,.abtn,.btn{display:none!important}
   .pg{display:block!important;padding:0;max-width:100%}
@@ -229,18 +235,26 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     <div class="cd-t">📷 <span data-t="reg_title">商品登録（スキャン / 手入力）</span></div>
     <p style="font-size:.8rem;color:var(--txt-l);margin-bottom:10px" data-t="reg_desc">カメラでバーコードを読み取るか、手入力で登録できます。</p>
     <button class="btn btn-ac btn-lg btn-bk" id="btn-cam" onclick="toggleCamera()">📷 <span data-t="btn_camera">カメラを起動する</span></button>
-    <div id="scanner-container" style="display:none;margin-top:8px"><video id="scanner-video" autoplay playsinline></video><div class="scan-ov"></div></div>
+    <div id="scanner-container" style="display:none;margin-top:8px"><video id="scanner-video" autoplay playsinline muted></video><div class="scan-ov"></div></div>
     <div class="scan-st" id="scan-st"></div>
 
-    <!-- スキャン先切替 -->
-    <div style="margin:10px 0;display:flex;gap:6px;justify-content:center" id="scan-target-btns">
+    <!-- スキャン先切替（3箇所） -->
+    <div style="margin:10px 0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap" id="scan-target-btns">
       <button class="btn btn-sm btn-p" id="st-btn-code" onclick="setScanTarget('code')" style="opacity:1">🎯 <span data-t="scan_to_code">→ 商品コードへ</span></button>
       <button class="btn btn-sm btn-ac" id="st-btn-store" onclick="setScanTarget('store')" style="opacity:.5">🎯 <span data-t="scan_to_store">→ ストア場所へ</span></button>
+      <button class="btn btn-sm btn-ok" id="st-btn-lot" onclick="setScanTarget('lot')" style="opacity:.5">🎯 <span data-t="scan_to_lot">→ ロットへ</span></button>
     </div>
 
     <!-- STEP1: 商品コード -->
-    <div class="cd" style="border-left:4px solid var(--pri);margin-top:8px">
-      <div style="font-size:.82rem;font-weight:600;margin-bottom:4px;color:var(--pri)">STEP 1: <span data-t="lbl_code">商品コード</span> <small>(CODIGO)</small> *</div>
+    <div class="cd" style="border-left:4px solid var(--pri);margin-top:8px" id="step-code">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:.82rem;font-weight:600;color:var(--pri)">STEP 1: <span data-t="lbl_code">商品コード</span> <small>(CODIGO)</small> *</div>
+        <div class="input-mode-sw">
+          <button class="btn-mode active" id="mode-code-scan" onclick="setInputMode('code','scan')">📷</button>
+          <button class="btn-mode" id="mode-code-manual" onclick="setInputMode('code','manual')">✏️</button>
+        </div>
+      </div>
+      <div id="code-scan-hint" style="font-size:.72rem;color:var(--txt-l);margin-bottom:3px;text-align:center">📷 カメラまたはバーコードリーダーで読み取り</div>
       <input type="text" class="fc" id="r-code" placeholder="スキャンまたは手入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleCodeEnter(this.value);}">
       <div id="r-code-ok" style="display:none;color:var(--ok);font-weight:600;font-size:.85rem;margin-top:3px">✅ <span id="r-det"></span></div>
       <!-- 全数スキャンモード -->
@@ -270,21 +284,41 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     </div>
 
     <!-- STEP2: ストア場所 -->
-    <div class="cd" style="border-left:4px solid var(--acc);margin-top:6px">
-      <div style="font-size:.82rem;font-weight:600;margin-bottom:4px;color:var(--acc)">STEP 2: <span data-t="lbl_store">ストア場所</span> <small>(LOCAL)</small> *</div>
+    <div class="cd" style="border-left:4px solid var(--acc);margin-top:6px" id="step-store">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:.82rem;font-weight:600;color:var(--acc)">STEP 2: <span data-t="lbl_store">ストア場所</span> <small>(LOCAL)</small> *</div>
+        <div class="input-mode-sw">
+          <button class="btn-mode active" id="mode-store-scan" onclick="setInputMode('store','scan')">📷</button>
+          <button class="btn-mode" id="mode-store-manual" onclick="setInputMode('store','manual')">✏️</button>
+        </div>
+      </div>
+      <div id="store-scan-hint" style="font-size:.72rem;color:var(--txt-l);margin-bottom:3px;text-align:center">📷 カメラまたはバーコードリーダーで読み取り</div>
       <input type="text" class="fc" id="r-store" placeholder="スキャンまたは手入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleStoreEnter(this.value);}">
       <div id="r-store-ok" style="display:none;color:var(--ok);font-weight:600;font-size:.85rem;margin-top:3px">✅ <span id="r-store-det"></span></div>
       <div id="r-store-existing" style="display:none;margin-top:6px"></div>
     </div>
 
-    <!-- STEP3: その他入力 -->
-    <div class="cd" style="border-left:4px solid var(--ok);margin-top:6px">
-      <div style="font-size:.82rem;font-weight:600;margin-bottom:4px;color:var(--ok)">STEP 3: <span data-t="reg_other">その他の入力</span></div>
+    <!-- STEP3: ロット -->
+    <div class="cd" style="border-left:4px solid var(--ok);margin-top:6px" id="step-lot">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:.82rem;font-weight:600;color:var(--ok)">STEP 3: <span data-t="lbl_lot">ロット</span> <small>(LOT)</small></div>
+        <div class="input-mode-sw">
+          <button class="btn-mode active" id="mode-lot-scan" onclick="setInputMode('lot','scan')">📷</button>
+          <button class="btn-mode" id="mode-lot-manual" onclick="setInputMode('lot','manual')">✏️</button>
+        </div>
+      </div>
+      <div id="lot-scan-hint" style="font-size:.72rem;color:var(--txt-l);margin-bottom:3px;text-align:center">📷 カメラまたはバーコードリーダーで読み取り</div>
+      <input type="text" class="fc" id="r-lot" placeholder="スキャンまたは手入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleLotEnter(this.value);}">
+      <div id="r-lot-ok" style="display:none;color:var(--ok);font-weight:600;font-size:.85rem;margin-top:3px">✅ <span id="r-lot-det"></span></div>
+    </div>
+
+    <!-- STEP4: その他入力 -->
+    <div class="cd" style="border-left:4px solid #95a5a6;margin-top:6px">
+      <div style="font-size:.82rem;font-weight:600;margin-bottom:4px;color:#95a5a6">STEP 4: <span data-t="reg_other">その他の入力</span></div>
       <div class="fr">
         <div class="fg"><label><span data-t="lbl_roke">ロケ</span> <small>(ROKE)</small></label><input type="text" class="fc" id="r-roke" placeholder="例: A-01-01"></div>
         <div class="fg"><label><span data-t="lbl_qty">数量</span> <small>(QTD)</small></label><input type="number" class="fc" id="r-qty" value="1" min="1"></div>
       </div>
-      <div class="fg"><label><span data-t="lbl_lot">ロット</span> <small>(LOT)</small></label><input type="text" class="fc" id="r-lot" placeholder="ロット番号"></div>
     </div>
 
     <button class="btn btn-ok btn-lg btn-bk" onclick="registerItem()" style="margin-top:8px">✅ <span data-t="btn_register">登録する</span></button>
@@ -464,8 +498,8 @@ const L = {
     msg_importing:'{done}/{all} 件を送信中...',
     msg_imported_partial:'✅ {ok}件成功 / ❌ {ng}件失敗 — 再度お試しください',
     scan_next:'次のバーコードをスキャンしてください...',
-    scan_to_code:'→ 商品コードへ', scan_to_store:'→ ストア場所へ',
-    scan_target_code:'スキャン先: 商品コード', scan_target_store:'スキャン先: ストア場所',
+    scan_to_code:'→ 商品コードへ', scan_to_store:'→ ストア場所へ', scan_to_lot:'→ ロットへ',
+    scan_target_code:'スキャン先: 商品コード', scan_target_store:'スキャン先: ストア場所', scan_target_lot:'スキャン先: ロット',
     reg_other:'その他の入力',
     print_hdr_store:'ストア管理表（Aゾーン）— ストア場所別', print_hdr_roke:'ストア管理表（Aゾーン）— ロケーション別',
     print_hdr_zone:'ストア管理表（Aゾーン）— ゾーン別', print_hdr_all:'ストア管理表（Aゾーン）— 全件一覧',
@@ -528,8 +562,8 @@ const L = {
     msg_importing:'{done}/{all} itens enviando...',
     msg_imported_partial:'✅ {ok} OK / ❌ {ng} falhou — tente novamente',
     scan_next:'Escaneie o próximo código...',
-    scan_to_code:'→ Código', scan_to_store:'→ Local',
-    scan_target_code:'Destino do scan: Código', scan_target_store:'Destino do scan: Local',
+    scan_to_code:'→ Código', scan_to_store:'→ Local', scan_to_lot:'→ Lote',
+    scan_target_code:'Destino do scan: Código', scan_target_store:'Destino do scan: Local', scan_target_lot:'Destino do scan: Lote',
     reg_other:'Outros dados',
     print_hdr_store:'Gestão Estoque (Zona A) — Por Local', print_hdr_roke:'Gestão Estoque (Zona A) — Por Localização',
     print_hdr_zone:'Gestão Estoque (Zona A) — Por Zona', print_hdr_all:'Gestão Estoque (Zona A) — Lista Completa',
@@ -949,19 +983,38 @@ async function saveEdit(){
 }
 
 // ============================================================
-// 登録（スキャン + 手入力統合）— スキャン先切替対応
+// 登録（スキャン + 手入力統合）— スキャン先切替対応（3箇所: code/store/lot）
 // ============================================================
-let scanTarget = 'code'; // 'code' or 'store'
+let scanTarget = 'code'; // 'code', 'store', or 'lot'
+let inputModes = {code:'scan', store:'scan', lot:'scan'}; // 各STEPの入力モード
 
 function setScanTarget(target){
   scanTarget = target;
-  document.getElementById('st-btn-code').style.opacity = target==='code' ? '1' : '.5';
-  document.getElementById('st-btn-store').style.opacity = target==='store' ? '1' : '.5';
-  const label = target==='code' ? t('scan_target_code') : t('scan_target_store');
-  document.getElementById('scan-st').textContent = '🎯 ' + label;
+  ['code','store','lot'].forEach(t2=>{
+    const btn=document.getElementById('st-btn-'+t2);
+    if(btn) btn.style.opacity = t2===target ? '1' : '.5';
+    const step=document.getElementById('step-'+t2);
+    if(step){ if(t2===target) step.classList.add('step-active'); else step.classList.remove('step-active'); }
+  });
+  const labels={code:t('scan_target_code'), store:t('scan_target_store'), lot:t('scan_target_lot')};
+  document.getElementById('scan-st').textContent = '🎯 ' + (labels[target]||target);
   // フォーカスも移す
-  if(target==='code') document.getElementById('r-code').focus();
-  else document.getElementById('r-store').focus();
+  const inputMap={code:'r-code',store:'r-store',lot:'r-lot'};
+  const el=document.getElementById(inputMap[target]);
+  if(el) el.focus();
+}
+
+function setInputMode(field, mode){
+  inputModes[field] = mode;
+  document.getElementById('mode-'+field+'-scan').classList.toggle('active', mode==='scan');
+  document.getElementById('mode-'+field+'-manual').classList.toggle('active', mode==='manual');
+  const hint=document.getElementById(field+'-scan-hint');
+  if(hint) hint.style.display = mode==='scan' ? 'block' : 'none';
+  // 手入力モードにしたらフォーカスを入力欄に
+  if(mode==='manual'){
+    const inputMap={code:'r-code',store:'r-store',lot:'r-lot'};
+    document.getElementById(inputMap[field]).focus();
+  }
 }
 
 function playBeep(){
@@ -1092,9 +1145,13 @@ function onBarcode(code){
     fillCode(code);
     // 自動的にストア場所のスキャンに切替
     if(!fsActive) setScanTarget('store');
-  } else {
+  } else if(scanTarget==='store'){
     fillStore(code);
-    // 自動的に商品コードのスキャンに戻す
+    // 自動的にロットのスキャンに切替
+    setScanTarget('lot');
+  } else if(scanTarget==='lot'){
+    fillLot(code);
+    // ロケ/数量の入力へ
     setScanTarget('code');
     document.getElementById('r-roke').focus();
   }
@@ -1115,6 +1172,12 @@ function fillStore(val){
   document.getElementById('r-store-det').textContent=val;
   document.getElementById('r-store-ok').style.display='block';
   showStoreLookup(val);
+}
+
+function fillLot(val){
+  document.getElementById('r-lot').value=val;
+  document.getElementById('r-lot-det').textContent=val;
+  document.getElementById('r-lot-ok').style.display='block';
 }
 
 // ===== 既存データルックアップ =====
@@ -1175,6 +1238,13 @@ function handleCodeEnter(val){
 function handleStoreEnter(val){
   if(!val||!val.trim())return;
   fillStore(val.trim());
+  setScanTarget('lot');
+  document.getElementById('r-lot').focus();
+}
+
+// ロット入力欄でEnter
+function handleLotEnter(val){
+  if(val && val.trim()) fillLot(val.trim());
   document.getElementById('r-roke').focus();
 }
 
@@ -1201,6 +1271,7 @@ async function registerItem(){
     document.getElementById('r-store').value='';
     document.getElementById('r-code-ok').style.display='none';
     document.getElementById('r-store-ok').style.display='none';
+    document.getElementById('r-lot-ok').style.display='none';
     document.getElementById('r-code-existing').style.display='none';
     document.getElementById('r-store-existing').style.display='none';
     document.getElementById('fullscan-area').style.display='none';
@@ -1211,6 +1282,8 @@ async function registerItem(){
     document.getElementById('r-lot').value='';
     // ロケはそのまま保持（同じロケに連続登録するケースが多いため）
     lastScan='';
+    // step-activeクラスを全て除去
+    ['code','store','lot'].forEach(s=>{const el=document.getElementById('step-'+s);if(el)el.classList.remove('step-active');});
     setScanTarget('code');
     await syncData();
     showToast(t('msg_registered',{code}),'ok');
