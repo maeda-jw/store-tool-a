@@ -57,10 +57,12 @@ body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;back
 .fc:focus{outline:none;border-color:var(--pri-l);box-shadow:0 0 0 3px rgba(41,128,185,.15)}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{background:var(--pri);color:#fff;padding:7px 9px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:.76rem;table-layout:fixed}
+th{background:var(--pri);color:#fff;padding:4px 5px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;cursor:pointer;font-size:.72rem}
 th:hover{background:var(--pri-l)}
-td{padding:6px 9px;border-bottom:1px solid var(--bdr)}
+td{padding:3px 5px;border-bottom:1px solid var(--bdr);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 列幅指定（操作,✓,ロケ,商品コード,ストア場所,数量,日時,ロット） */
+th:nth-child(1){width:54px}th:nth-child(2){width:30px}th:nth-child(3){width:60px}th:nth-child(4){width:auto}th:nth-child(5){width:68px}th:nth-child(6){width:36px}th:nth-child(7){width:72px}th:nth-child(8){width:60px}
 tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 .fb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .fb .fc{width:auto;flex:1;min-width:100px}.fb select{max-width:170px}
@@ -108,7 +110,7 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 .log-tm{color:var(--txt-l);font-size:.72rem}
 @keyframes sf{0%{background:#d5f5e3}100%{background:transparent}}.sf{animation:sf 1.5s ease}
 .btn-ref{background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:3px}
-@media(max-width:600px){.hdr h1{font-size:.9rem}.hdr-s{display:none}.nav-t{padding:8px 10px;font-size:.76rem}.fr{grid-template-columns:1fr}.fb{flex-direction:column}.fb .fc{width:100%}td,th{padding:4px 6px;font-size:.74rem}}
+@media(max-width:600px){.hdr h1{font-size:.9rem}.hdr-s{display:none}.nav-t{padding:8px 10px;font-size:.76rem}.fr{grid-template-columns:1fr}.fb{flex-direction:column}.fb .fc{width:100%}td,th{padding:2px 3px;font-size:.68rem}.badge{padding:1px 4px;font-size:.64rem}.btn-sm{padding:3px 5px;font-size:.68rem}.abtn{gap:2px}}
 /* チップフィルター */
 .chip-group{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
 .chip-group-label{font-size:.76rem;font-weight:600;color:var(--txt-l);margin-bottom:2px;display:block}
@@ -202,14 +204,14 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     <div class="tw">
       <table>
         <thead><tr>
-          <th><input type="checkbox" id="sel-all" onchange="toggleSelAll()"></th>
-          <th onclick="doSort('roke')" data-t="th_roke">ロケ ▼</th>
-          <th onclick="doSort('code')" data-t="th_code">商品コード ▼</th>
-          <th onclick="doSort('store')" data-t="th_store">ストア場所 ▼</th>
-          <th onclick="doSort('qty')" data-t="th_qty">数量 ▼</th>
-          <th onclick="doSort('date')" data-t="th_date">登録日時 ▼</th>
-          <th data-t="th_lot">ロット</th>
           <th class="no-p" data-t="th_action">操作</th>
+          <th><input type="checkbox" id="sel-all" onchange="toggleSelAll()"></th>
+          <th onclick="doSort('roke')" data-t="th_roke">ロケ</th>
+          <th onclick="doSort('code')" data-t="th_code">商品コード</th>
+          <th onclick="doSort('store')" data-t="th_store">ストア場所</th>
+          <th onclick="doSort('qty')" data-t="th_qty">数量</th>
+          <th onclick="doSort('date')" data-t="th_date">日時</th>
+          <th data-t="th_lot">ロット</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -386,6 +388,42 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 <div class="toast" id="toast"></div>
 
 <script>
+// ============================================================
+// iframe検出 & 脱出（GASのiframeサンドボックスからの脱出）
+// ============================================================
+(function(){
+  if(window.self !== window.top){
+    // iframeの中にいる → カメラが使えないので脱出する
+    var url = window.location.href;
+    try{
+      // まず window.top を使って脱出を試みる
+      window.top.location.href = url;
+      return;
+    }catch(e){
+      // クロスオリジンでブロックされた場合
+    }
+    try{
+      // window.parent で試す
+      window.parent.location.href = url;
+      return;
+    }catch(e){}
+    // どちらもブロックされた場合 → ユーザーに手動で開いてもらう
+    document.addEventListener('DOMContentLoaded', function(){
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:sans-serif;';
+      overlay.innerHTML = '<div style="max-width:360px">'
+        + '<div style="font-size:3rem;margin-bottom:16px">📷</div>'
+        + '<h2 style="color:#1a5276;margin-bottom:12px">カメラを使うには<br>ブラウザで直接開いてください</h2>'
+        + '<p style="color:#666;font-size:.9rem;margin-bottom:8px">現在、Googleのフレーム内で表示されているため、カメラ機能が使えません。</p>'
+        + '<p style="color:#666;font-size:.85rem;margin-bottom:20px">下のボタンを押して、ブラウザで直接開いてください。</p>'
+        + '<a href="' + url + '" target="_blank" rel="noopener" style="display:inline-block;background:#1a5276;color:#fff;padding:14px 28px;border-radius:10px;font-size:1.1rem;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(0,0,0,.2)">🔗 ブラウザで開く</a>'
+        + '<p style="margin-top:16px;color:#999;font-size:.75rem">（新しいタブで開きます）</p>'
+        + '</div>';
+      document.body.appendChild(overlay);
+    });
+  }
+})();
+
 // ============================================================
 // 多言語辞書
 // ============================================================
@@ -588,21 +626,19 @@ function init(){
     document.getElementById('setup-url-row').style.display='none'; // URL欄を隠す
   }
 
+  // GAS URLが無くてもURL入力欄は常に非表示（設定タブから変更可能）
+  document.getElementById('setup-url-row').style.display='none';
+
   if(!cfg.user){
-    // 名前が未設定 → セットアップ画面を表示
+    // 名前が未設定 → セットアップ画面を表示（名前のみ入力）
     document.getElementById('setup-screen').style.display='block';
     document.getElementById('main-app').style.display='none';
-  } else if(!cfg.url){
-    // URLも未設定（ローカルファイル使用時）→ セットアップ画面
-    document.getElementById('setup-screen').style.display='block';
-    document.getElementById('main-app').style.display='none';
-    document.getElementById('setup-url-row').style.display=''; // URL欄を表示
   } else {
-    // 設定済み → メイン画面
+    // 名前設定済み → メイン画面へ（URLは未設定でもOK）
     document.getElementById('setup-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     document.getElementById('ubdg').textContent='👤 '+cfg.user;
-    document.getElementById('st-url').value=cfg.url;
+    document.getElementById('st-url').value=cfg.url||'';
     document.getElementById('st-user').value=cfg.user;
     restoreFilter();
     syncData();
@@ -613,8 +649,7 @@ function saveSetup(){
   const u=document.getElementById('setup-url').value.trim();
   const n=document.getElementById('setup-user').value.trim();
   if(!n){showToast(t('msg_no_name'),'ng');return;}
-  // GAS配信時はURLが既にセット済み。ローカル時はURL必須
-  if(!cfg.url && !u){showToast('GAS URLを入力してください','ng');return;}
+  // URLは任意（後から設定タブで変更可能）
   if(u) cfg.url=u;
   cfg.user=n;svCfg();init();
 }
@@ -652,6 +687,7 @@ function setSS(s){const el=document.getElementById('sync-st');if(s==='on')el.inn
 // データ同期（起動時のみ）
 // ============================================================
 async function syncData(){
+  if(!cfg.url){setSS('off');updStats();renderTable();return;} // URL未設定時はスキップ
   if(isSyncing)return;isSyncing=true;setSS('ing');showLd(t('msg_syncing'));
   const r=await gas({action:'getAll'});
   hideLd();isSyncing=false;
@@ -854,17 +890,17 @@ function renderTable(){
   em.style.display='none';
 
   tb.innerHTML=fi.map(i=>`<tr class="${selIds.has(i.id)?'sel':''}" id="row-${i.id}">
-    <td><input type="checkbox" ${selIds.has(i.id)?'checked':''} onchange="toggleSel('${esc(i.id)}')"></td>
-    <td><span class="badge badge-p">${esc(i.roke)}</span></td>
-    <td><strong>${esc(i.code)}</strong></td>
-    <td><span class="badge badge-a">${esc(i.store)}</span></td>
-    <td style="text-align:right;font-weight:600">${esc(i.qty)}</td>
-    <td style="font-size:.75rem">${esc(i.date)}</td>
-    <td>${esc(i.lot)}</td>
     <td class="no-p"><div class="abtn">
       <button class="btn btn-p btn-sm" onclick="openEd('${esc(i.id)}')">✏️</button>
       <button class="btn btn-ng btn-sm" onclick="delItem('${esc(i.id)}')">🗑️</button>
     </div></td>
+    <td><input type="checkbox" ${selIds.has(i.id)?'checked':''} onchange="toggleSel('${esc(i.id)}')"></td>
+    <td title="${esc(i.roke)}"><span class="badge badge-p">${esc(i.roke)}</span></td>
+    <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
+    <td title="${esc(i.store)}"><span class="badge badge-a">${esc(i.store)}</span></td>
+    <td style="text-align:right;font-weight:600">${esc(i.qty)}</td>
+    <td style="font-size:.68rem" title="${esc(i.date)}">${esc(i.date)}</td>
+    <td title="${esc(i.lot)}">${esc(i.lot)}</td>
   </tr>`).join('');
 }
 
@@ -1195,30 +1231,34 @@ async function toggleCamera(){
   if(camStream){stopCam();return;}
   const btn=document.getElementById('btn-cam'),con=document.getElementById('scanner-container'),vid=document.getElementById('scanner-video'),st=document.getElementById('scan-st');
 
-  // HTTPS/セキュアコンテキストのチェック
-  if(location.protocol==='file:' || (!window.isSecureContext && location.protocol!=='https:')){
-    btn.disabled=false;
-    st.innerHTML='❌ '+t('camera_https')+'<br><small style="color:var(--txt-l)">'+t('camera_https_hint')+'</small>';
-    return;
-  }
+  // getUserMedia が利用不可能な場合のみブロック（プロトコルチェックは行わず、ブラウザに任せる）
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     btn.disabled=false;
-    st.textContent='❌ '+t('camera_nosup');
+    st.innerHTML='❌ '+t('camera_nosup')+'<br><small style="color:var(--txt-l)">'+t('camera_https_hint')+'</small>';
     return;
   }
 
   try{
     btn.innerHTML='⏳ ...';btn.disabled=true;
-    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    // まず背面カメラを試す
+    try{
+      camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'},width:{ideal:1280},height:{ideal:720}}});
+    }catch(e1){
+      // 背面カメラが無い場合は任意のカメラ
+      camStream=await navigator.mediaDevices.getUserMedia({video:true});
+    }
     vid.srcObject=camStream;con.style.display='block';
+    try{await vid.play();}catch(e2){/* autoplayで再生済みの場合は無視 */}
     btn.innerHTML='⏹️ <span data-t="btn_camera_stop">'+t('btn_camera_stop')+'</span>';btn.disabled=false;
     st.textContent=t('camera_prompt');
     startBarDet(vid);
   }catch(e){
+    camStream=null;
     btn.innerHTML='📷 <span data-t="btn_camera">'+t('btn_camera')+'</span>';btn.disabled=false;
-    // エラーの種類に応じたメッセージ
     if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
       st.innerHTML='❌ '+t('camera_denied')+'<br><small style="color:var(--txt-l)">'+t('camera_denied_hint')+'</small>';
+    } else if(e.name==='NotFoundError'){
+      st.textContent='❌ カメラが見つかりません / Câmera não encontrada';
     } else {
       st.textContent='❌ '+t('camera_fail')+': '+e.message;
     }
@@ -1235,11 +1275,15 @@ function startBarDet(vid){
   if('BarcodeDetector' in window){
     const det=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','code_93','qr_code','upc_a','upc_e','itf','codabar']});
     let last='',lt=0;
+    document.getElementById('scan-st').textContent=t('camera_prompt')+' (BarcodeDetector)';
     scanInt=setInterval(async()=>{
       if(vid.readyState!==vid.HAVE_ENOUGH_DATA)return;
       try{const bc=await det.detect(vid);if(bc.length>0){const c=bc[0].rawValue,n=Date.now();if(c!==last||n-lt>3000){last=c;lt=n;onBarcode(c);}}}catch(e){}
     },300);
-  }else{document.getElementById('scan-st').textContent=t('camera_nosup');}
+  }else{
+    // BarcodeDetector非対応ブラウザ → カメラは起動済みだが自動読取不可
+    document.getElementById('scan-st').innerHTML='📷 カメラは起動しています<br><small style="color:var(--warn)">⚠️ このブラウザはバーコード自動読取非対応です。手入力してください。<br>Chrome最新版を推奨します。</small>';
+  }
 }
 
 // ============================================================
