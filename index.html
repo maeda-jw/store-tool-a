@@ -754,8 +754,22 @@ async function syncData(){
   if(isSyncing)return;isSyncing=true;setSS('ing');showLd(t('msg_syncing'));
   const r=await gas({action:'getAll'});
   hideLd();isSyncing=false;
-  if(r&&r.success){items=r.items||[];setSS('on');updStats();renderTable();}
-  else setSS('off');
+  if(r&&r.success){
+    items=r.items||[];setSS('on');updStats();
+    // DOM更新を確実に反映させる
+    requestAnimationFrame(()=>{ renderTable(); });
+  } else {
+    setSS('off');
+    // 失敗時もリトライ（初回CORSフォールバックで遅延する場合がある）
+    if(!r && cfg.url){
+      setTimeout(async()=>{
+        setSS('ing');
+        const r2=await gas({action:'getAll'});
+        if(r2&&r2.success){items=r2.items||[];setSS('on');updStats();renderTable();}
+        else setSS('off');
+      },1500);
+    }
+  }
 }
 
 // ============================================================
@@ -1373,18 +1387,42 @@ function stopCam(){
   document.getElementById('btn-cam').innerHTML='📷 <span data-t="btn_camera">'+t('btn_camera')+'</span>';
   document.getElementById('scan-st').textContent='';
 }
-function startBarDet(vid){
+async function startBarDet(vid){
+  const FORMATS=['ean_13','ean_8','code_128','code_39','code_93','qr_code','upc_a','upc_e','itf','codabar'];
+  let DetClass=null;
+
+  // 1) ネイティブ BarcodeDetector があればそれを使う（Chrome等）
   if('BarcodeDetector' in window){
-    const det=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','code_93','qr_code','upc_a','upc_e','itf','codabar']});
+    DetClass=window.BarcodeDetector;
+  }else{
+    // 2) ポリフィルを動的読み込み（iOS Safari等）
+    document.getElementById('scan-st').textContent='バーコードリーダーを準備中…';
+    try{
+      const mod=await import('https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/es/index.min.js');
+      DetClass=mod.BarcodeDetector||mod.default;
+    }catch(e1){
+      try{
+        const mod2=await import('https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/index.min.js');
+        DetClass=mod2.BarcodeDetector||mod2.default;
+      }catch(e2){
+        // ポリフィルも読み込めない場合
+        document.getElementById('scan-st').innerHTML='📷 カメラは起動しています<br><small style="color:var(--warn)">⚠️ バーコード自動読取を準備できませんでした。手入力してください。<br>Chrome最新版またはWi-Fi環境を推奨します。</small>';
+        return;
+      }
+    }
+  }
+
+  try{
+    const det=new DetClass({formats:FORMATS});
     let last='',lt=0;
-    document.getElementById('scan-st').textContent=t('camera_prompt')+' (BarcodeDetector)';
+    const label=('BarcodeDetector' in window)?'Native':'Polyfill';
+    document.getElementById('scan-st').textContent=t('camera_prompt')+' ('+label+')';
     scanInt=setInterval(async()=>{
       if(vid.readyState!==vid.HAVE_ENOUGH_DATA)return;
       try{const bc=await det.detect(vid);if(bc.length>0){const c=bc[0].rawValue,n=Date.now();if(c!==last||n-lt>3000){last=c;lt=n;onBarcode(c);}}}catch(e){}
     },300);
-  }else{
-    // BarcodeDetector非対応ブラウザ → カメラは起動済みだが自動読取不可
-    document.getElementById('scan-st').innerHTML='📷 カメラは起動しています<br><small style="color:var(--warn)">⚠️ このブラウザはバーコード自動読取非対応です。手入力してください。<br>Chrome最新版を推奨します。</small>';
+  }catch(initErr){
+    document.getElementById('scan-st').innerHTML='📷 カメラは起動しています<br><small style="color:var(--warn)">⚠️ バーコード検出の初期化に失敗しました。手入力してください。</small>';
   }
 }
 
