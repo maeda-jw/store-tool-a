@@ -58,11 +58,14 @@ body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;back
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:.76rem;table-layout:fixed;min-width:520px}
-th{background:var(--pri);color:#fff;padding:4px 5px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;cursor:pointer;font-size:.72rem}
+th{background:var(--pri);color:#fff;padding:4px 5px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;cursor:pointer;font-size:.72rem;position:relative}
 th:hover{background:var(--pri-l)}
 td{padding:3px 5px;border-bottom:1px solid var(--bdr);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 列幅指定（操作,✓,ロケ,商品コード,ストア場所,数量,日時,ロット） */
+/* 列幅初期値（操作,✓,ロケ,商品コード,ストア場所,数量,日時,ロット） */
 th:nth-child(1){width:50px}th:nth-child(2){width:28px}th:nth-child(3){width:56px}th:nth-child(4){width:90px}th:nth-child(5){width:72px}th:nth-child(6){width:36px}th:nth-child(7){width:68px}th:nth-child(8){width:56px}
+/* カラムリサイズハンドル */
+.col-resize{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:transparent;z-index:2}
+.col-resize:hover,.col-resize.active{background:rgba(255,255,255,.4)}
 tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 .fb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .fb .fc{width:auto;flex:1;min-width:100px}.fb select{max-width:170px}
@@ -265,13 +268,11 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
       <div id="r-lot-ok" style="display:none;color:var(--ok);font-weight:600;font-size:.85rem;margin-top:3px">✅ <span id="r-lot-det"></span></div>
     </div>
 
-    <!-- STEP4: その他入力 -->
+    <!-- STEP4: 数量入力 -->
     <div class="cd" style="border-left:4px solid #95a5a6;margin-top:6px">
-      <div style="font-size:.82rem;font-weight:600;margin-bottom:4px;color:#95a5a6">STEP 4: <span data-t="reg_other">その他の入力</span></div>
-      <div class="fr">
-        <div class="fg"><label><span data-t="lbl_roke">ロケ</span> <small>(ROKE)</small></label><input type="text" class="fc" id="r-roke" placeholder="例: A-01-01"></div>
-        <div class="fg"><label><span data-t="lbl_qty">数量</span> <small>(QTD)</small></label><input type="number" class="fc" id="r-qty" value="1" min="1"></div>
-      </div>
+      <div style="font-size:.82rem;font-weight:600;margin-bottom:4px;color:#95a5a6">STEP 4: <span data-t="lbl_qty">数量</span> <small>(QTD)</small></div>
+      <input type="number" class="fc" id="r-qty" value="1" min="1" style="font-size:1.1rem;font-weight:bold;text-align:center;max-width:200px">
+      <p style="font-size:.7rem;color:var(--txt-l);margin-top:4px">※ ロケは別シートから自動取得されます</p>
     </div>
 
     <button class="btn btn-ok btn-lg btn-bk" onclick="registerItem()" style="margin-top:8px">✅ <span data-t="btn_register">登録する</span></button>
@@ -957,6 +958,49 @@ function toggleSel(id){if(selIds.has(id))selIds.delete(id);else selIds.add(id);r
 function toggleSelAll(){const c=document.getElementById('sel-all').checked;if(c)items.forEach(i=>selIds.add(i.id));else selIds.clear();renderTable();}
 
 // ============================================================
+// カラム幅リサイズ（ドラッグ対応）
+// ============================================================
+function initColResize(){
+  const ths=document.querySelectorAll('#pg-list thead th');
+  ths.forEach(th=>{
+    // 既にハンドルがあれば追加しない
+    if(th.querySelector('.col-resize'))return;
+    const handle=document.createElement('div');
+    handle.className='col-resize';
+    th.appendChild(handle);
+    let startX,startW;
+    function onDown(e){
+      e.preventDefault();e.stopPropagation();
+      startX=e.touches?e.touches[0].clientX:e.clientX;
+      startW=th.offsetWidth;
+      handle.classList.add('active');
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+      document.addEventListener('touchmove',onMove,{passive:false});
+      document.addEventListener('touchend',onUp);
+    }
+    function onMove(e){
+      e.preventDefault();
+      const x=e.touches?e.touches[0].clientX:e.clientX;
+      const w=Math.max(20,startW+(x-startX));
+      th.style.width=w+'px';
+    }
+    function onUp(){
+      handle.classList.remove('active');
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      document.removeEventListener('touchmove',onMove);
+      document.removeEventListener('touchend',onUp);
+    }
+    handle.addEventListener('mousedown',onDown);
+    handle.addEventListener('touchstart',onDown,{passive:false});
+  });
+}
+// renderTable後にリサイズハンドルを初期化
+const _origRender=renderTable;
+renderTable=function(){_origRender();initColResize();};
+
+// ============================================================
 // CRUD
 // ============================================================
 async function delItem(id){
@@ -1108,7 +1152,7 @@ function handleStoreEnter(val){
 // ロット入力欄でEnter
 function handleLotEnter(val){
   if(val && val.trim()) fillLot(val.trim());
-  document.getElementById('r-roke').focus();
+  document.getElementById('r-qty').focus();
 }
 
 async function registerItem(){
@@ -1118,7 +1162,7 @@ async function registerItem(){
   if(!store){showToast(t('msg_no_store'),'ng');return;}
   showLd('...');
   const r=await gas({action:'add',
-    roke:document.getElementById('r-roke').value.trim(),
+    roke:'',
     code:code,
     store:store,
     qty:document.getElementById('r-qty').value||'1',
@@ -1128,7 +1172,7 @@ async function registerItem(){
   hideLd();
   if(r&&r.success){
     addLog('登録/Registrar',code+' @ '+store+' (by '+cfg.user+')');
-    addScanHist({code,roke:document.getElementById('r-roke').value,store:store,qty:document.getElementById('r-qty').value,date:nowStr()});
+    addScanHist({code,roke:'',store:store,qty:document.getElementById('r-qty').value,date:nowStr()});
     // フォームリセット
     document.getElementById('r-code').value='';
     document.getElementById('r-store').value='';
