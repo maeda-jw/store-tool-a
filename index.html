@@ -57,12 +57,12 @@ body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;back
 .fc:focus{outline:none;border-color:var(--pri-l);box-shadow:0 0 0 3px rgba(41,128,185,.15)}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{width:100%;border-collapse:collapse;font-size:.76rem;table-layout:fixed;min-width:580px}
+table{width:100%;border-collapse:collapse;font-size:.76rem;table-layout:fixed;min-width:520px}
 th{background:var(--pri);color:#fff;padding:4px 5px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;cursor:pointer;font-size:.72rem}
 th:hover{background:var(--pri-l)}
 td{padding:3px 5px;border-bottom:1px solid var(--bdr);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* 列幅指定（操作,✓,ロケ,商品コード,ストア場所,数量,日時,ロット） */
-th:nth-child(1){width:54px}th:nth-child(2){width:30px}th:nth-child(3){width:60px}th:nth-child(4){min-width:120px}th:nth-child(5){width:68px}th:nth-child(6){width:36px}th:nth-child(7){width:72px}th:nth-child(8){width:60px}
+th:nth-child(1){width:50px}th:nth-child(2){width:28px}th:nth-child(3){width:56px}th:nth-child(4){width:90px}th:nth-child(5){width:72px}th:nth-child(6){width:36px}th:nth-child(7){width:68px}th:nth-child(8){width:56px}
 tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 .fb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .fb .fc{width:auto;flex:1;min-width:100px}.fb select{max-width:170px}
@@ -232,83 +232,36 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 <!-- ===== 登録（スキャン統合） ===== -->
 <div id="pg-register" class="pg">
   <div class="cd">
-    <div class="cd-t">📷 <span data-t="reg_title">商品登録（スキャン / 手入力）</span></div>
-    <p style="font-size:.8rem;color:var(--txt-l);margin-bottom:10px" data-t="reg_desc">カメラでバーコードを読み取るか、手入力で登録できます。</p>
-    <button class="btn btn-ac btn-lg btn-bk" id="btn-cam" onclick="toggleCamera()">📷 <span data-t="btn_camera">カメラを起動する</span></button>
-    <div id="scanner-container" style="display:none;margin-top:8px"><video id="scanner-video" autoplay playsinline muted></video><div class="scan-ov"></div></div>
-    <div class="scan-st" id="scan-st"></div>
-
-    <!-- スキャン先切替（3箇所） -->
-    <div style="margin:10px 0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap" id="scan-target-btns">
-      <button class="btn btn-sm btn-p" id="st-btn-code" onclick="setScanTarget('code')" style="opacity:1">🎯 <span data-t="scan_to_code">→ 商品コードへ</span></button>
-      <button class="btn btn-sm btn-ac" id="st-btn-store" onclick="setScanTarget('store')" style="opacity:.5">🎯 <span data-t="scan_to_store">→ ストア場所へ</span></button>
-      <button class="btn btn-sm btn-ok" id="st-btn-lot" onclick="setScanTarget('lot')" style="opacity:.5">🎯 <span data-t="scan_to_lot">→ ロットへ</span></button>
+    <div class="cd-t">📋 <span data-t="reg_title">商品登録（Excelインポート / 手入力）</span></div>
+    <p style="font-size:.8rem;color:var(--txt-l);margin-bottom:10px" data-t="reg_desc">Excelファイルからインポートするか、手入力で登録できます。</p>
+    <!-- 検品データインポート -->
+    <div style="margin-bottom:10px;padding:10px;background:#eaf7ee;border-radius:8px;border:1px solid #c3e6cb">
+      <div style="font-size:.82rem;font-weight:600;color:var(--ok);margin-bottom:6px">📤 検品データインポート</div>
+      <p style="font-size:.72rem;color:var(--txt-l);margin-bottom:6px">なんでも検品等のExcelファイルを読み込みます。<br>midasi_cdに「-」を含む行 → ストア場所として登録</p>
+      <button class="btn btn-ok" onclick="document.getElementById('kenpin-f').click()">📤 検品Excelを選択</button>
+      <input type="file" id="kenpin-f" accept=".xlsx,.xls,.csv" style="display:none" onchange="importKenpin(event)">
     </div>
 
     <!-- STEP1: 商品コード -->
     <div class="cd" style="border-left:4px solid var(--pri);margin-top:8px" id="step-code">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div style="font-size:.82rem;font-weight:600;color:var(--pri)">STEP 1: <span data-t="lbl_code">商品コード</span> <small>(CODIGO)</small> *</div>
-        <div class="input-mode-sw">
-          <button class="btn-mode active" id="mode-code-scan" onclick="setInputMode('code','scan')">📷</button>
-          <button class="btn-mode" id="mode-code-manual" onclick="setInputMode('code','manual')">✏️</button>
-        </div>
-      </div>
-      <div id="code-scan-hint" style="font-size:.72rem;color:var(--txt-l);margin-bottom:3px;text-align:center">📷 カメラまたはバーコードリーダーで読み取り</div>
-      <input type="text" class="fc" id="r-code" placeholder="スキャンまたは手入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleCodeEnter(this.value);}">
+      <div style="font-size:.82rem;font-weight:600;color:var(--pri);margin-bottom:4px">STEP 1: <span data-t="lbl_code">商品コード</span> <small>(CODIGO)</small> *</div>
+      <input type="text" class="fc" id="r-code" placeholder="商品コードを入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleCodeEnter(this.value);}">
       <div id="r-code-ok" style="display:none;color:var(--ok);font-weight:600;font-size:.85rem;margin-top:3px">✅ <span id="r-det"></span></div>
-      <!-- 全数スキャンモード -->
-      <div id="fullscan-area" style="display:none;margin-top:8px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <label style="font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer">
-            <input type="checkbox" id="fullscan-chk" onchange="toggleFullScan()">
-            <span data-t="fullscan_label">📦 全数スキャンモード</span>
-          </label>
-          <span style="font-size:.72rem;color:var(--txt-l)" data-t="fullscan_desc">（1本ずつスキャンして混在をチェック）</span>
-        </div>
-        <div id="fullscan-panel" style="display:none">
-          <div id="fullscan-counter" style="text-align:center;padding:10px;background:#eaf7ee;border-radius:8px;margin-bottom:6px">
-            <div style="font-size:.72rem;color:var(--txt-l)" data-t="fullscan_scanned">スキャン済み</div>
-            <div style="font-size:2.2rem;font-weight:800;color:var(--ok)" id="fs-count">0</div>
-            <div style="font-size:.78rem;color:var(--txt-l)" id="fs-code-label"></div>
-          </div>
-          <div id="fullscan-alert" style="display:none"></div>
-          <div id="fullscan-mismatch-list" style="display:none;margin-top:6px"></div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <button class="btn btn-ok btn-sm" onclick="finishFullScan()" style="flex:1">✅ <span data-t="fullscan_done">スキャン完了</span></button>
-            <button class="btn btn-ng btn-sm" onclick="resetFullScan()">🔄 <span data-t="fullscan_reset">リセット</span></button>
-          </div>
-        </div>
-      </div>
       <div id="r-code-existing" style="display:none;margin-top:6px"></div>
     </div>
 
     <!-- STEP2: ストア場所 -->
     <div class="cd" style="border-left:4px solid var(--acc);margin-top:6px" id="step-store">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div style="font-size:.82rem;font-weight:600;color:var(--acc)">STEP 2: <span data-t="lbl_store">ストア場所</span> <small>(LOCAL)</small> *</div>
-        <div class="input-mode-sw">
-          <button class="btn-mode active" id="mode-store-scan" onclick="setInputMode('store','scan')">📷</button>
-          <button class="btn-mode" id="mode-store-manual" onclick="setInputMode('store','manual')">✏️</button>
-        </div>
-      </div>
-      <div id="store-scan-hint" style="font-size:.72rem;color:var(--txt-l);margin-bottom:3px;text-align:center">📷 カメラまたはバーコードリーダーで読み取り</div>
-      <input type="text" class="fc" id="r-store" placeholder="スキャンまたは手入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleStoreEnter(this.value);}">
+      <div style="font-size:.82rem;font-weight:600;color:var(--acc);margin-bottom:4px">STEP 2: <span data-t="lbl_store">ストア場所</span> <small>(LOCAL)</small> *</div>
+      <input type="text" class="fc" id="r-store" placeholder="ストア場所を入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleStoreEnter(this.value);}">
       <div id="r-store-ok" style="display:none;color:var(--ok);font-weight:600;font-size:.85rem;margin-top:3px">✅ <span id="r-store-det"></span></div>
       <div id="r-store-existing" style="display:none;margin-top:6px"></div>
     </div>
 
     <!-- STEP3: ロット -->
     <div class="cd" style="border-left:4px solid var(--ok);margin-top:6px" id="step-lot">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div style="font-size:.82rem;font-weight:600;color:var(--ok)">STEP 3: <span data-t="lbl_lot">ロット</span> <small>(LOT)</small></div>
-        <div class="input-mode-sw">
-          <button class="btn-mode active" id="mode-lot-scan" onclick="setInputMode('lot','scan')">📷</button>
-          <button class="btn-mode" id="mode-lot-manual" onclick="setInputMode('lot','manual')">✏️</button>
-        </div>
-      </div>
-      <div id="lot-scan-hint" style="font-size:.72rem;color:var(--txt-l);margin-bottom:3px;text-align:center">📷 カメラまたはバーコードリーダーで読み取り</div>
-      <input type="text" class="fc" id="r-lot" placeholder="スキャンまたは手入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleLotEnter(this.value);}">
+      <div style="font-size:.82rem;font-weight:600;color:var(--ok);margin-bottom:4px">STEP 3: <span data-t="lbl_lot">ロット</span> <small>(LOT)</small></div>
+      <input type="text" class="fc" id="r-lot" placeholder="ロットを入力" style="font-size:1.1rem;font-weight:bold;text-align:center" onkeydown="if(event.key==='Enter'){event.preventDefault();handleLotEnter(this.value);}">
       <div id="r-lot-ok" style="display:none;color:var(--ok);font-weight:600;font-size:.85rem;margin-top:3px">✅ <span id="r-lot-det"></span></div>
     </div>
 
@@ -615,7 +568,8 @@ function applyLang() {
 const CK='store_cfg_az', LK='store_log_az', FK='store_filter_az';
 let cfg={url:'',user:''}, items=[], logs=[];
 let sortF='date', sortA=false, selIds=new Set();
-let camStream=null, scanInt=null, isSyncing=false, lastScan='';
+let isSyncing=false, lastScan='';
+let locMap={}; // 商品コード → ロケーション（別シートから取得）
 
 function ldCfg(){try{const c=localStorage.getItem(CK);if(c)cfg=JSON.parse(c);const l=localStorage.getItem(LK);if(l)logs=JSON.parse(l);const ln=localStorage.getItem('store_lang');if(ln)lang=ln;}catch(e){}}
 function svCfg(){localStorage.setItem(CK,JSON.stringify(cfg))}
@@ -752,21 +706,31 @@ function setSS(s){const el=document.getElementById('sync-st');if(s==='on')el.inn
 async function syncData(){
   if(!cfg.url){setSS('off');updStats();renderTable();return;} // URL未設定時はスキップ
   if(isSyncing)return;isSyncing=true;setSS('ing');showLd(t('msg_syncing'));
-  const r=await gas({action:'getAll'});
+  // データ取得とロケ取得を並列実行
+  const [r, locR]=await Promise.all([
+    gas({action:'getAll'}),
+    gas({action:'getLocations'}).catch(()=>null)
+  ]);
   hideLd();isSyncing=false;
   if(r&&r.success){
     items=r.items||[];setSS('on');updStats();
-    // DOM更新を確実に反映させる
+    // ロケマップ更新
+    if(locR&&locR.success&&locR.locations) locMap=locR.locations;
     requestAnimationFrame(()=>{ renderTable(); });
   } else {
     setSS('off');
-    // 失敗時もリトライ（初回CORSフォールバックで遅延する場合がある）
     if(!r && cfg.url){
       setTimeout(async()=>{
         setSS('ing');
-        const r2=await gas({action:'getAll'});
-        if(r2&&r2.success){items=r2.items||[];setSS('on');updStats();renderTable();}
-        else setSS('off');
+        const [r2, locR2]=await Promise.all([
+          gas({action:'getAll'}),
+          gas({action:'getLocations'}).catch(()=>null)
+        ]);
+        if(r2&&r2.success){
+          items=r2.items||[];setSS('on');updStats();
+          if(locR2&&locR2.success&&locR2.locations) locMap=locR2.locations;
+          renderTable();
+        } else setSS('off');
       },1500);
     }
   }
@@ -801,7 +765,7 @@ function closeApp(){
 // ============================================================
 function updStats(){
   const tq=items.reduce((s,i)=>s+(parseInt(i.qty)||0),0);
-  const rk=new Set(items.map(i=>i.roke).filter(Boolean));
+  const rk=new Set(items.map(i=>locMap[i.code]||i.roke||'').filter(Boolean));
   const st=new Set(items.map(i=>i.store).filter(Boolean));
   document.getElementById('stat-items').textContent=items.length;
   document.getElementById('sm-i').textContent=items.length;
@@ -833,12 +797,13 @@ function updFilters(){
   buildStChips('pcg-st', pSelSt, 'on-a', false);
 }
 
-function getUniqueL1(){ return [...new Set(items.map(i=>getL1(i.roke)).filter(Boolean))].sort(); }
+function getRoke(i){ return locMap[i.code]||i.roke||''; }
+function getUniqueL1(){ return [...new Set(items.map(i=>getL1(getRoke(i))).filter(Boolean))].sort(); }
 function getL2forL1(l1set){
   return [...new Set(items.filter(i=>{
-    const c=getL1(i.roke);
+    const c=getL1(getRoke(i));
     return c && (l1set.size===0 || l1set.has(c));
-  }).map(i=>getL2(i.roke)).filter(Boolean))].sort();
+  }).map(i=>getL2(getRoke(i))).filter(Boolean))].sort();
 }
 function getS1(store){ return store ? store.substring(0,1) : ''; }
 function getUniqueSt(){ return [...new Set(items.map(i=>getS1(i.store)).filter(Boolean))].sort(); }
@@ -949,15 +914,18 @@ function renderTable(){
   const srch=document.getElementById('srch').value.toLowerCase();
 
   let fi=items.filter(i=>{
-    if(selL1.size>0 && !selL1.has(getL1(i.roke))) return false;
-    if(selL2.size>0 && !selL2.has(getL2(i.roke))) return false;
+    const rk=getRoke(i);
+    if(selL1.size>0 && !selL1.has(getL1(rk))) return false;
+    if(selL2.size>0 && !selL2.has(getL2(rk))) return false;
     if(selSt.size>0 && !selSt.has(getS1(i.store))) return false;
-    if(srch){const h=[i.code,i.roke,i.store,i.lot,i.date].join(' ').toLowerCase();if(!h.includes(srch))return false;}
+    if(srch){const h=[i.code,rk,i.store,i.lot,i.date].join(' ').toLowerCase();if(!h.includes(srch))return false;}
     return true;
   });
 
   fi.sort((a,b)=>{
-    let va=a[sortF]||'',vb=b[sortF]||'';
+    let va,vb;
+    if(sortF==='roke'){va=getRoke(a);vb=getRoke(b);}
+    else{va=a[sortF]||'';vb=b[sortF]||'';}
     if(sortF==='qty'){va=parseInt(va)||0;vb=parseInt(vb)||0;}
     if(va<vb)return sortA?-1:1;if(va>vb)return sortA?1:-1;return 0;
   });
@@ -966,19 +934,22 @@ function renderTable(){
   if(!fi.length){tb.innerHTML='';em.style.display='block';return;}
   em.style.display='none';
 
-  tb.innerHTML=fi.map(i=>`<tr class="${selIds.has(i.id)?'sel':''}" id="row-${i.id}">
+  tb.innerHTML=fi.map(i=>{
+    // ロケは別シートから最新値を取得（なければ元データのroke）
+    const roke=locMap[i.code]||i.roke||'';
+    return `<tr class="${selIds.has(i.id)?'sel':''}" id="row-${i.id}">
     <td class="no-p"><div class="abtn">
       <button class="btn btn-p btn-sm" onclick="openEd('${esc(i.id)}')">✏️</button>
       <button class="btn btn-ng btn-sm" onclick="delItem('${esc(i.id)}')">🗑️</button>
     </div></td>
     <td><input type="checkbox" ${selIds.has(i.id)?'checked':''} onchange="toggleSel('${esc(i.id)}')"></td>
-    <td title="${esc(i.roke)}"><span class="badge badge-p">${esc(i.roke)}</span></td>
+    <td title="${esc(roke)}"><span class="badge badge-p">${esc(roke)}</span></td>
     <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
     <td title="${esc(i.store)}"><span class="badge badge-a">${esc(i.store)}</span></td>
     <td style="text-align:right;font-weight:600">${esc(i.qty)}</td>
     <td style="font-size:.68rem" title="${esc(i.date)}">${esc(i.date)}</td>
     <td title="${esc(i.lot)}">${esc(i.lot)}</td>
-  </tr>`).join('');
+  </tr>`;}).join('');
 }
 
 function doSort(f){if(sortF===f)sortA=!sortA;else{sortF=f;sortA=true;}renderTable();}
@@ -1028,36 +999,15 @@ async function saveEdit(){
 // ============================================================
 // 登録（スキャン + 手入力統合）— スキャン先切替対応（3箇所: code/store/lot）
 // ============================================================
-let scanTarget = 'code'; // 'code', 'store', or 'lot'
-let inputModes = {code:'scan', store:'scan', lot:'scan'}; // 各STEPの入力モード
-
-function setScanTarget(target){
-  scanTarget = target;
+// 入力フォーカス管理（カメラ廃止後は手入力のみ）
+function setActiveStep(target){
   ['code','store','lot'].forEach(t2=>{
-    const btn=document.getElementById('st-btn-'+t2);
-    if(btn) btn.style.opacity = t2===target ? '1' : '.5';
     const step=document.getElementById('step-'+t2);
     if(step){ if(t2===target) step.classList.add('step-active'); else step.classList.remove('step-active'); }
   });
-  const labels={code:t('scan_target_code'), store:t('scan_target_store'), lot:t('scan_target_lot')};
-  document.getElementById('scan-st').textContent = '🎯 ' + (labels[target]||target);
-  // フォーカスも移す
   const inputMap={code:'r-code',store:'r-store',lot:'r-lot'};
   const el=document.getElementById(inputMap[target]);
   if(el) el.focus();
-}
-
-function setInputMode(field, mode){
-  inputModes[field] = mode;
-  document.getElementById('mode-'+field+'-scan').classList.toggle('active', mode==='scan');
-  document.getElementById('mode-'+field+'-manual').classList.toggle('active', mode==='manual');
-  const hint=document.getElementById(field+'-scan-hint');
-  if(hint) hint.style.display = mode==='scan' ? 'block' : 'none';
-  // 手入力モードにしたらフォーカスを入力欄に
-  if(mode==='manual'){
-    const inputMap={code:'r-code',store:'r-store',lot:'r-lot'};
-    document.getElementById(inputMap[field]).focus();
-  }
 }
 
 function playBeep(){
@@ -1076,138 +1026,11 @@ function playAlarm(){
   }catch(e){}
 }
 
-// ===== 全数スキャンモード =====
-let fsActive=false;    // 全数スキャンモードON/OFF
-let fsBaseCode='';     // 基準商品コード
-let fsCount=0;         // 一致スキャン数
-let fsMismatch=[];     // 不一致リスト [{code, count}]
-
-function toggleFullScan(){
-  const chk=document.getElementById('fullscan-chk');
-  fsActive=chk.checked;
-  document.getElementById('fullscan-panel').style.display=fsActive?'block':'none';
-  if(!fsActive) resetFullScan();
-}
-
-function resetFullScan(){
-  fsCount=0; fsMismatch=[]; fsBaseCode='';
-  document.getElementById('fs-count').textContent='0';
-  document.getElementById('fs-code-label').textContent='';
-  document.getElementById('fullscan-alert').style.display='none';
-  document.getElementById('fullscan-alert').innerHTML='';
-  document.getElementById('fullscan-mismatch-list').style.display='none';
-  document.getElementById('fullscan-mismatch-list').innerHTML='';
-  document.getElementById('fullscan-counter').style.background='#eaf7ee';
-}
-
-function fsAddScan(code){
-  if(!fsBaseCode){
-    // 最初のスキャン → 基準コードを設定
-    fsBaseCode=code;
-    fsCount=1;
-    document.getElementById('fs-code-label').textContent='📋 '+fsBaseCode;
-    document.getElementById('fs-count').textContent='1';
-    document.getElementById('scan-st').textContent='✅ '+t('fullscan_first',{code:code});
-    playBeep();
-    return;
-  }
-
-  if(code===fsBaseCode){
-    // 一致 → カウントアップ
-    fsCount++;
-    document.getElementById('fs-count').textContent=String(fsCount);
-    document.getElementById('scan-st').textContent='✅ '+fsCount+' - '+t('scan_ok');
-    playBeep();
-  } else {
-    // 不一致 → アラート！
-    playAlarm();
-    // 不一致リストに追加
-    const exist=fsMismatch.find(m=>m.code===code);
-    if(exist) exist.count++; else fsMismatch.push({code:code,count:1});
-    const totalMM=fsMismatch.reduce((s,m)=>s+m.count,0);
-
-    // カウンター背景を赤に
-    document.getElementById('fullscan-counter').style.background='#fde8e8';
-
-    // アラート表示
-    const alertEl=document.getElementById('fullscan-alert');
-    alertEl.style.display='block';
-    alertEl.innerHTML=`<div class="fs-alert fs-alert-ng">⚠️ ${t('fullscan_mismatch',{code:code})}</div>`;
-
-    // 不一致リスト表示
-    const listEl=document.getElementById('fullscan-mismatch-list');
-    listEl.style.display='block';
-    listEl.innerHTML=`<div class="fs-mismatch">
-      <div class="fs-mismatch-t">⚠️ ${t('fullscan_mm_title',{n:totalMM})}</div>
-      ${fsMismatch.map(m=>`<div class="fs-mm-item">
-        <span><strong>${esc(m.code)}</strong></span>
-        <span style="color:var(--ng);font-weight:700">${m.count}${t('items_unit')}</span>
-      </div>`).join('')}
-      <div style="margin-top:6px;font-size:.75rem;color:var(--txt-l)">${t('fullscan_mm_hint')}</div>
-    </div>`;
-
-    document.getElementById('scan-st').textContent='⚠️ '+t('fullscan_mismatch',{code:code});
-    // バイブレーション（対応端末）
-    if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
-  }
-  // 数量自動反映
-  document.getElementById('r-qty').value=String(fsCount);
-}
-
-function finishFullScan(){
-  document.getElementById('r-qty').value=String(fsCount);
-  const totalMM=fsMismatch.reduce((s,m)=>s+m.count,0);
-  if(totalMM>0){
-    showToast(t('fullscan_finish_warn',{ok:fsCount,ng:totalMM}),'ng');
-  } else {
-    showToast(t('fullscan_finish_ok',{n:fsCount}),'ok');
-  }
-  // スキャン先をストア場所に切替
-  setScanTarget('store');
-}
-
-// カメラ・バーコードリーダーからの読取
-function onBarcode(code){
-  if(!code||!code.trim())return;code=code.trim();
-
-  // 全数スキャンモード中はすべてSTEP1に送る
-  if(fsActive && scanTarget==='code'){
-    fsAddScan(code);
-    // 基準コードをr-codeに反映
-    if(fsBaseCode){
-      document.getElementById('r-code').value=fsBaseCode;
-      document.getElementById('r-det').textContent=fsBaseCode;
-      document.getElementById('r-code-ok').style.display='block';
-      showCodeLookup(fsBaseCode);
-    }
-    return; // ストア場所に自動切替しない
-  }
-
-  playBeep();
-  if(scanTarget==='code'){
-    fillCode(code);
-    // 自動的にストア場所のスキャンに切替
-    if(!fsActive) setScanTarget('store');
-  } else if(scanTarget==='store'){
-    fillStore(code);
-    // 自動的にロットのスキャンに切替
-    setScanTarget('lot');
-  } else if(scanTarget==='lot'){
-    fillLot(code);
-    // ロケ/数量の入力へ
-    setScanTarget('code');
-    document.getElementById('r-roke').focus();
-  }
-}
-
 function fillCode(code){
   document.getElementById('r-code').value=code;
   document.getElementById('r-det').textContent=code;
   document.getElementById('r-code-ok').style.display='block';
-  document.getElementById('scan-st').textContent='✅ '+t('scan_ok')+': '+code;
   showCodeLookup(code);
-  // 全数スキャンエリアを表示（商品コードが入った時点で選択可能に）
-  document.getElementById('fullscan-area').style.display='block';
 }
 
 function fillStore(val){
@@ -1271,18 +1094,15 @@ function showStoreLookup(store){
 // 商品コード入力欄でEnter
 function handleCodeEnter(val){
   if(!val||!val.trim())return;
-  playBeep();
   fillCode(val.trim());
-  setScanTarget('store');
-  document.getElementById('r-store').focus();
+  setActiveStep('store');
 }
 
 // ストア場所入力欄でEnter
 function handleStoreEnter(val){
   if(!val||!val.trim())return;
   fillStore(val.trim());
-  setScanTarget('lot');
-  document.getElementById('r-lot').focus();
+  setActiveStep('lot');
 }
 
 // ロット入力欄でEnter
@@ -1317,20 +1137,14 @@ async function registerItem(){
     document.getElementById('r-lot-ok').style.display='none';
     document.getElementById('r-code-existing').style.display='none';
     document.getElementById('r-store-existing').style.display='none';
-    document.getElementById('fullscan-area').style.display='none';
-    document.getElementById('fullscan-chk').checked=false;
-    fsActive=false; resetFullScan();
-    document.getElementById('fullscan-panel').style.display='none';
     document.getElementById('r-qty').value='1';
     document.getElementById('r-lot').value='';
     // ロケはそのまま保持（同じロケに連続登録するケースが多いため）
     lastScan='';
-    // step-activeクラスを全て除去
     ['code','store','lot'].forEach(s=>{const el=document.getElementById('step-'+s);if(el)el.classList.remove('step-active');});
-    setScanTarget('code');
+    setActiveStep('code');
     await syncData();
     showToast(t('msg_registered',{code}),'ok');
-    document.getElementById('scan-st').textContent=t('scan_next');
   }
 }
 
@@ -1340,91 +1154,8 @@ function addScanHist(it){
   d.insertAdjacentHTML('afterbegin',`<div class="log-e sf"><strong>${esc(it.code)}</strong> — ${esc(it.roke)} / ${esc(it.store)} / ${it.qty}<div class="log-tm">${it.date}</div></div>`);
 }
 
-// ============================================================
-// カメラ
-// ============================================================
-async function toggleCamera(){
-  if(camStream){stopCam();return;}
-  const btn=document.getElementById('btn-cam'),con=document.getElementById('scanner-container'),vid=document.getElementById('scanner-video'),st=document.getElementById('scan-st');
-
-  // getUserMedia が利用不可能な場合のみブロック（プロトコルチェックは行わず、ブラウザに任せる）
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    btn.disabled=false;
-    st.innerHTML='❌ '+t('camera_nosup')+'<br><small style="color:var(--txt-l)">'+t('camera_https_hint')+'</small>';
-    return;
-  }
-
-  try{
-    btn.innerHTML='⏳ ...';btn.disabled=true;
-    // まず背面カメラを試す
-    try{
-      camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'},width:{ideal:1280},height:{ideal:720}}});
-    }catch(e1){
-      // 背面カメラが無い場合は任意のカメラ
-      camStream=await navigator.mediaDevices.getUserMedia({video:true});
-    }
-    vid.srcObject=camStream;con.style.display='block';
-    try{await vid.play();}catch(e2){/* autoplayで再生済みの場合は無視 */}
-    btn.innerHTML='⏹️ <span data-t="btn_camera_stop">'+t('btn_camera_stop')+'</span>';btn.disabled=false;
-    st.textContent=t('camera_prompt');
-    startBarDet(vid);
-  }catch(e){
-    camStream=null;
-    btn.innerHTML='📷 <span data-t="btn_camera">'+t('btn_camera')+'</span>';btn.disabled=false;
-    if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
-      st.innerHTML='❌ '+t('camera_denied')+'<br><small style="color:var(--txt-l)">'+t('camera_denied_hint')+'</small>';
-    } else if(e.name==='NotFoundError'){
-      st.textContent='❌ カメラが見つかりません / Câmera não encontrada';
-    } else {
-      st.textContent='❌ '+t('camera_fail')+': '+e.message;
-    }
-  }
-}
-function stopCam(){
-  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
-  if(scanInt){clearInterval(scanInt);scanInt=null;}
-  document.getElementById('scanner-container').style.display='none';
-  document.getElementById('btn-cam').innerHTML='📷 <span data-t="btn_camera">'+t('btn_camera')+'</span>';
-  document.getElementById('scan-st').textContent='';
-}
-async function startBarDet(vid){
-  const FORMATS=['ean_13','ean_8','code_128','code_39','code_93','qr_code','upc_a','upc_e','itf','codabar'];
-  let DetClass=null;
-
-  // 1) ネイティブ BarcodeDetector があればそれを使う（Chrome等）
-  if('BarcodeDetector' in window){
-    DetClass=window.BarcodeDetector;
-  }else{
-    // 2) ポリフィルを動的読み込み（iOS Safari等）
-    document.getElementById('scan-st').textContent='バーコードリーダーを準備中…';
-    try{
-      const mod=await import('https://fastly.jsdelivr.net/npm/barcode-detector@2/dist/es/index.min.js');
-      DetClass=mod.BarcodeDetector||mod.default;
-    }catch(e1){
-      try{
-        const mod2=await import('https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/index.min.js');
-        DetClass=mod2.BarcodeDetector||mod2.default;
-      }catch(e2){
-        // ポリフィルも読み込めない場合
-        document.getElementById('scan-st').innerHTML='📷 カメラは起動しています<br><small style="color:var(--warn)">⚠️ バーコード自動読取を準備できませんでした。手入力してください。<br>Chrome最新版またはWi-Fi環境を推奨します。</small>';
-        return;
-      }
-    }
-  }
-
-  try{
-    const det=new DetClass({formats:FORMATS});
-    let last='',lt=0;
-    const label=('BarcodeDetector' in window)?'Native':'Polyfill';
-    document.getElementById('scan-st').textContent=t('camera_prompt')+' ('+label+')';
-    scanInt=setInterval(async()=>{
-      if(vid.readyState!==vid.HAVE_ENOUGH_DATA)return;
-      try{const bc=await det.detect(vid);if(bc.length>0){const c=bc[0].rawValue,n=Date.now();if(c!==last||n-lt>3000){last=c;lt=n;onBarcode(c);}}}catch(e){}
-    },300);
-  }catch(initErr){
-    document.getElementById('scan-st').innerHTML='📷 カメラは起動しています<br><small style="color:var(--warn)">⚠️ バーコード検出の初期化に失敗しました。手入力してください。</small>';
-  }
-}
+// カメラ機能は廃止（互換性のためstopCamは空関数として残す）
+function stopCam(){}
 
 // ============================================================
 // 印刷
@@ -1432,8 +1163,9 @@ async function startBarDet(vid){
 // 印刷用フィルター済みデータ取得
 function getPrintData(){
   return items.filter(i=>{
-    if(pSelL1.size>0 && !pSelL1.has(getL1(i.roke))) return false;
-    if(pSelL2.size>0 && !pSelL2.has(getL2(i.roke))) return false;
+    const rk=getRoke(i);
+    if(pSelL1.size>0 && !pSelL1.has(getL1(rk))) return false;
+    if(pSelL2.size>0 && !pSelL2.has(getL2(rk))) return false;
     if(pSelSt.size>0 && !pSelSt.has(getS1(i.store))) return false;
     return true;
   });
@@ -1466,7 +1198,7 @@ function mkPTbl2(data){
     <th>${t('th_date').replace(' ▼','')}</th><th>${t('th_lot')}</th>
   </tr></thead><tbody>
   ${data.map(i=>`<tr>
-    <td>${esc(i.roke)}</td><td><b>${esc(i.code)}</b></td><td>${esc(i.store)}</td>
+    <td>${esc(locMap[i.code]||i.roke||'')}</td><td><b>${esc(i.code)}</b></td><td>${esc(i.store)}</td>
     <td style="text-align:right">${esc(i.qty)}</td><td>${esc(i.date)}</td><td>${esc(i.lot)}</td>
   </tr>`).join('')}</tbody></table>
   <div class="tot">${t('tbl_total')}:${data.length}${t('items_unit')} / ${t('tbl_qty_total')}:${data.reduce((s,i)=>s+(parseInt(i.qty)||0),0)}</div>`;
@@ -1477,7 +1209,7 @@ function printByStore(){
   const g={};src.forEach(i=>{const k=i.store||'(N/A)';if(!g[k])g[k]=[];g[k].push(i);});
   let h=`<h2>${t('print_hdr_store')}</h2><div class="sub">${t('print_date')}:${nowStr()} / ${t('print_total')} ${src.length}${t('print_items')}</div>`;
   Object.keys(g).sort().forEach(k=>{
-    g[k].sort((a,b)=>(a.roke||'').localeCompare(b.roke||''));
+    g[k].sort((a,b)=>(getRoke(a)).localeCompare(getRoke(b)));
     h+=`<div class="grp">📍 ${esc(k)} (${g[k].length}${t('items_unit')})</div>${mkPTbl2(g[k])}`;
   });
   doPrint(h);
@@ -1485,7 +1217,7 @@ function printByStore(){
 
 function printByRoke(){
   const src=getPrintData();
-  const g={};src.forEach(i=>{const k=i.roke||'(N/A)';if(!g[k])g[k]=[];g[k].push(i);});
+  const g={};src.forEach(i=>{const k=getRoke(i)||'(N/A)';if(!g[k])g[k]=[];g[k].push(i);});
   let h=`<h2>${t('print_hdr_roke')}</h2><div class="sub">${t('print_date')}:${nowStr()} / ${t('print_total')} ${src.length}${t('print_items')}</div>`;
   Object.keys(g).sort().forEach(k=>{
     h+=`<div class="grp">📦 ${esc(k)} (${g[k].length}${t('items_unit')})</div>${mkPTbl2(g[k])}`;
@@ -1504,7 +1236,7 @@ function printAll(){
 // ============================================================
 function exportExcel(){
   if(!items.length){showToast(t('no_data'),'ng');return;}
-  const data=items.map(i=>({'ロケ（ROKE)':i.roke,'商品コード (CODIGO)':i.code,'ストア場所 （LOCAL)':i.store,'数量 (QTD)':parseInt(i.qty)||0,'登録日時':i.date,'ロット (LOT)':i.lot}));
+  const data=items.map(i=>({'ロケ（ROKE)':locMap[i.code]||i.roke||'','商品コード (CODIGO)':i.code,'ストア場所 （LOCAL)':i.store,'数量 (QTD)':parseInt(i.qty)||0,'登録日時':i.date,'ロット (LOT)':i.lot}));
   const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:15},{wch:20},{wch:15},{wch:10},{wch:16},{wch:15}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
   XLSX.writeFile(wb,`ストア管理_Aゾーン_${nowStr().replace(/[\/:]/g,'').replace(' ','_')}.xlsx`);
@@ -1544,6 +1276,77 @@ async function importExcel(ev){
       await syncData();
       if(fail) showToast(t('msg_imported_partial',{ok:total,ng:fail}),'ng');
       else showToast(t('msg_imported',{n:total}),'ok');
+    }catch(err){hideLd();showToast('Error: '+err.message,'ng');}
+  };
+  reader.readAsArrayBuffer(file);ev.target.value='';
+}
+
+// ============================================================
+// 検品データインポート（なんでも検品 形式）
+// midasi_cdに「-」を含む行 → store（ストア場所）として扱う
+// syouhin_cd → code, jisseki_su → qty, kenpin_date → date
+// ============================================================
+async function importKenpin(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!raw.length){showToast('データがありません','ng');return;}
+
+      // midasi_cdに「-」を含む行のみ抽出
+      const data=raw.filter(r=>{
+        const m=String(r.midasi_cd||r['midasi_cd']||'');
+        return m.includes('-');
+      });
+
+      if(!data.length){
+        showToast('ストア場所データ（midasi_cdに「-」を含む行）が見つかりません','ng');
+        return;
+      }
+
+      // プレビュー表示
+      const preview=data.slice(0,5).map(r=>`${r.midasi_cd}: ${r.syouhin_cd} x${r.jisseki_su}`).join('\n');
+      if(!confirm(`${data.length}件の検品データをインポートしますか？\n\n【プレビュー（先頭5件）】\n${preview}${data.length>5?'\n...':''}` ))return;
+
+      // データ変換
+      const ni=data.map(r=>{
+        let dt='';
+        const kd=r.kenpin_date||r['kenpin_date']||'';
+        if(kd instanceof Date){
+          dt=kd.getFullYear()+'/'
+            +String(kd.getMonth()+1).padStart(2,'0')+'/'
+            +String(kd.getDate()).padStart(2,'0');
+        } else {
+          dt=String(kd).substring(0,10).replace(/-/g,'/');
+        }
+        return {
+          roke:'',  // ロケは別シートから取得する仕組みで対応
+          code:String(r.syouhin_cd||r['syouhin_cd']||'').trim(),
+          store:String(r.midasi_cd||r['midasi_cd']||'').trim(),
+          qty:String(parseInt(r.jisseki_su||r['jisseki_su'])||0),
+          date:dt||nowStr(),
+          lot:''
+        };
+      });
+
+      // 分割送信（200件ずつ）
+      const BATCH=200;
+      let total=0, fail=0;
+      showLd('インポート中... 0/'+ni.length);
+      for(let i=0;i<ni.length;i+=BATCH){
+        const chunk=ni.slice(i,i+BATCH);
+        showLd('インポート中... '+i+'/'+ni.length);
+        const res=await gas({action:'addBatch',items:chunk,user:cfg.user});
+        if(res&&res.success) total+=res.count; else fail+=chunk.length;
+      }
+      hideLd();
+      addLog('検品Import',file.name+' '+total+'件'+(fail?' (失敗:'+fail+')':''));
+      await syncData();
+      if(fail) showToast('✅ '+total+'件成功 / ❌ '+fail+'件失敗','ng');
+      else showToast(total+'件をインポートしました','ok');
     }catch(err){hideLd();showToast('Error: '+err.message,'ng');}
   };
   reader.readAsArrayBuffer(file);ev.target.value='';
