@@ -799,6 +799,7 @@ function updFilters(){
 }
 
 function getRoke(i){ return locMap[i.code]||i.roke||''; }
+function dateOnly(d){ if(!d)return''; return d.replace(/[\s\u3000T].*/,''); }
 function getUniqueL1(){ return [...new Set(items.map(i=>getL1(getRoke(i))).filter(Boolean))].sort(); }
 function getL2forL1(l1set){
   return [...new Set(items.filter(i=>{
@@ -948,7 +949,7 @@ function renderTable(){
     <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
     <td title="${esc(i.store)}"><span class="badge badge-a">${esc(i.store)}</span></td>
     <td style="text-align:right;font-weight:600">${esc(i.qty)}</td>
-    <td style="font-size:.68rem" title="${esc(i.date)}">${esc(i.date)}</td>
+    <td style="font-size:.68rem" title="${esc(i.date)}">${esc(dateOnly(i.date))}</td>
     <td title="${esc(i.lot)}">${esc(i.lot)}</td>
   </tr>`;}).join('');
 }
@@ -1224,12 +1225,12 @@ function doPrint(html){
     .sub{text-align:center;color:#666;font-size:9px;margin-bottom:3px}
     table{width:100%;border-collapse:collapse}
     th{background:#333;color:#fff;padding:1px 2px;text-align:left;font-weight:600;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    th.main{font-size:12px}
-    th.sub2{font-size:8px}
+    th.main{font-size:13px}
+    th.sub2{font-size:7px}
     td{padding:1px 2px;border-bottom:1px solid #ddd}
-    td.main{font-size:14px;font-weight:600}
-    td.sub2{font-size:8px;color:#666}
-    td.qty{font-size:16px;font-weight:700;text-align:right}
+    td.main{font-size:16px;font-weight:600}
+    td.sub2{font-size:7px;color:#888}
+    td.qty{font-size:18px;font-weight:700;text-align:right}
     tr:nth-child(even){background:#f8f8f8}
     .tot{text-align:right;font-size:9px;color:#666;margin-top:2px}
     @media print{body{padding:0}@page{size:A4 portrait;margin:4mm}}
@@ -1245,7 +1246,7 @@ function mkPTbl(data){
   </tr></thead><tbody>
   ${data.map(i=>`<tr>
     <td class="main">${esc(locMap[i.code]||i.roke||'')}</td><td class="main">${esc(i.code)}</td><td class="main">${esc(i.store)}</td>
-    <td class="qty">${esc(i.qty)}</td><td class="sub2">${esc(i.date)}</td><td class="sub2">${esc(i.lot)}</td>
+    <td class="qty">${esc(i.qty)}</td><td class="sub2">${esc(dateOnly(i.date))}</td><td class="sub2">${esc(i.lot)}</td>
   </tr>`).join('')}</tbody></table>
   <div class="tot">${data.length}件 / 数量合計:${data.reduce((s,i)=>s+(parseInt(i.qty)||0),0)}</div>`;
 }
