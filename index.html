@@ -1216,62 +1216,52 @@ function getPrintData(){
 }
 
 function doPrint(html){
-  // データのみ印刷用の別ウィンドウ
   const w=window.open('','_blank','width=800,height=600');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>印刷</title>
   <style>
-    body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;color:#2c3e50;padding:10px;font-size:12px}
-    h2{font-size:15px;text-align:center;margin-bottom:4px}
-    .sub{text-align:center;color:#666;font-size:11px;margin-bottom:12px}
-    table{width:100%;border-collapse:collapse;font-size:11px}
-    th{background:#333;color:#fff;padding:4px 6px;text-align:left;font-weight:600;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    td{padding:3px 6px;border-bottom:1px solid #ccc}
-    .grp{font-size:13px;font-weight:bold;margin:10px 0 4px;padding:3px 6px;background:#eee}
-    .tot{text-align:right;font-size:10px;color:#666;margin-top:2px;margin-bottom:10px}
-    @media print{body{padding:0}@page{margin:8mm}}
+    body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;color:#222;padding:4mm;font-size:8px;line-height:1.2}
+    h2{font-size:11px;text-align:center;margin:0 0 2px}
+    .sub{text-align:center;color:#666;font-size:7px;margin-bottom:4px}
+    table{width:100%;border-collapse:collapse;font-size:7.5px}
+    th{background:#333;color:#fff;padding:2px 3px;text-align:left;font-weight:600;font-size:7px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    td{padding:1.5px 3px;border-bottom:1px solid #ddd}
+    tr:nth-child(even){background:#f9f9f9}
+    .tot{text-align:right;font-size:7px;color:#666;margin-top:2px}
+    @media print{body{padding:0}@page{size:A4 portrait;margin:6mm}}
   </style></head><body>${html}</body></html>`);
   w.document.close();
   setTimeout(()=>{w.print();},400);
 }
 
-function mkPTbl2(data){
+function mkPTbl(data){
   if(!data.length)return'';
   return`<table><thead><tr>
-    <th>${t('th_roke').replace(' ▼','')}</th><th>${t('th_code').replace(' ▼','')}</th>
-    <th>${t('th_store').replace(' ▼','')}</th><th style="text-align:right">${t('th_qty').replace(' ▼','')}</th>
-    <th>${t('th_date').replace(' ▼','')}</th><th>${t('th_lot')}</th>
+    <th>ロケ</th><th>商品コード</th><th>ストア場所</th><th style="text-align:right">数量</th><th>登録日</th><th>ロット</th>
   </tr></thead><tbody>
   ${data.map(i=>`<tr>
-    <td>${esc(locMap[i.code]||i.roke||'')}</td><td><b>${esc(i.code)}</b></td><td>${esc(i.store)}</td>
+    <td>${esc(locMap[i.code]||i.roke||'')}</td><td>${esc(i.code)}</td><td>${esc(i.store)}</td>
     <td style="text-align:right">${esc(i.qty)}</td><td>${esc(i.date)}</td><td>${esc(i.lot)}</td>
   </tr>`).join('')}</tbody></table>
-  <div class="tot">${t('tbl_total')}:${data.length}${t('items_unit')} / ${t('tbl_qty_total')}:${data.reduce((s,i)=>s+(parseInt(i.qty)||0),0)}</div>`;
+  <div class="tot">${data.length}件 / 数量合計:${data.reduce((s,i)=>s+(parseInt(i.qty)||0),0)}</div>`;
 }
 
 function printByStore(){
   const src=getPrintData();
-  const g={};src.forEach(i=>{const k=i.store||'(N/A)';if(!g[k])g[k]=[];g[k].push(i);});
-  let h=`<h2>${t('print_hdr_store')}</h2><div class="sub">${t('print_date')}:${nowStr()} / ${t('print_total')} ${src.length}${t('print_items')}</div>`;
-  Object.keys(g).sort().forEach(k=>{
-    g[k].sort((a,b)=>(getRoke(a)).localeCompare(getRoke(b)));
-    h+=`<div class="grp">📍 ${esc(k)} (${g[k].length}${t('items_unit')})</div>${mkPTbl2(g[k])}`;
-  });
+  src.sort((a,b)=>{const d=(a.store||'').localeCompare(b.store||'');return d!==0?d:(getRoke(a)).localeCompare(getRoke(b));});
+  let h=`<h2>ストア場所別一覧</h2><div class="sub">${nowStr()} / ${src.length}件</div>${mkPTbl(src)}`;
   doPrint(h);
 }
 
 function printByRoke(){
   const src=getPrintData();
-  const g={};src.forEach(i=>{const k=getRoke(i)||'(N/A)';if(!g[k])g[k]=[];g[k].push(i);});
-  let h=`<h2>${t('print_hdr_roke')}</h2><div class="sub">${t('print_date')}:${nowStr()} / ${t('print_total')} ${src.length}${t('print_items')}</div>`;
-  Object.keys(g).sort().forEach(k=>{
-    h+=`<div class="grp">📦 ${esc(k)} (${g[k].length}${t('items_unit')})</div>${mkPTbl2(g[k])}`;
-  });
+  src.sort((a,b)=>(getRoke(a)).localeCompare(getRoke(b)));
+  let h=`<h2>ロケーション別一覧</h2><div class="sub">${nowStr()} / ${src.length}件</div>${mkPTbl(src)}`;
   doPrint(h);
 }
 
 function printAll(){
-  const src=getPrintData().sort((a,b)=>(a.roke||'').localeCompare(b.roke||''));
-  let h=`<h2>${t('print_hdr_all')}</h2><div class="sub">${t('print_date')}:${nowStr()} / ${t('print_total')} ${src.length}${t('print_items')}</div>${mkPTbl2(src)}`;
+  const src=getPrintData().sort((a,b)=>(getRoke(a)).localeCompare(getRoke(b)));
+  let h=`<h2>全件一覧</h2><div class="sub">${nowStr()} / ${src.length}件</div>${mkPTbl(src)}`;
   doPrint(h);
 }
 
@@ -1369,7 +1359,7 @@ async function importKenpin(ev){
         return {
           roke:'',  // ロケは別シートから取得する仕組みで対応
           code:String(r.syouhin_cd||r['syouhin_cd']||'').trim(),
-          store:String(r.midasi_cd||r['midasi_cd']||'').trim(),
+          store:String(r.midasi_cd||r['midasi_cd']||'').trim().replace(/-.*$/,''),
           qty:String(parseInt(r.jisseki_su||r['jisseki_su'])||0),
           date:dt||nowStr(),
           lot:''
