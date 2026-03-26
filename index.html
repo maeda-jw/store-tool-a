@@ -799,7 +799,7 @@ function updFilters(){
 }
 
 function getRoke(i){ return locMap[i.code]||i.roke||''; }
-function dateOnly(d){ if(!d)return''; return d.replace(/[\s\u3000T].*/,''); }
+function dateOnly(d){ if(!d)return''; var s=String(d).replace(/[\s\u3000T].*/,''); return s.replace(/-/g,'/'); }
 function getUniqueL1(){ return [...new Set(items.map(i=>getL1(getRoke(i))).filter(Boolean))].sort(); }
 function getL2forL1(l1set){
   return [...new Set(items.filter(i=>{
