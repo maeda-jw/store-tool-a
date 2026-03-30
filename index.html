@@ -197,11 +197,17 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     <div class="sc"><div class="n" id="sm-s">0</div><div class="l" data-t="sum_store">ストア場所</div></div>
   </div>
   <div class="no-p" style="margin-bottom:10px">
-    <div class="fb">
+    <div class="fb" id="list-bar-normal">
       <input type="text" class="fc" id="srch" placeholder="🔍" oninput="renderTable()" data-t-ph="search_ph" style="flex:1;min-width:120px">
       <button class="btn btn-p btn-sm" onclick="syncData()">🔄 <span data-t="btn_refresh">更新</span></button>
-      <button class="btn btn-a btn-sm" onclick="openBulkEdit()">✏️ 一括変更</button>
+      <button class="btn btn-a btn-sm" onclick="startBulkEdit()">✏️ <span data-t="btn_bulk_edit">一括変更</span></button>
       <button class="btn btn-ng btn-sm" onclick="deleteSelected()">🗑️ <span data-t="btn_del_sel">選択削除</span></button>
+    </div>
+    <div class="fb" id="list-bar-edit" style="display:none;background:#fff3cd;border-radius:8px;padding:6px 10px;align-items:center">
+      <span style="font-weight:600;font-size:.85rem">✏️ <span data-t="bulk_edit_mode">編集モード — セル編集＋チェックで削除</span></span>
+      <span style="flex:1"></span>
+      <button class="btn btn-ok btn-sm" onclick="saveBulkEdit()">💾 <span data-t="btn_save">保存</span></button>
+      <button class="btn btn-ol btn-sm" onclick="cancelBulkEdit()"><span data-t="btn_cancel">キャンセル</span></button>
     </div>
     <span class="chip-group-label">🏷️ <span data-t="filter_l1">エリア（ロケ左1文字）</span></span>
     <div class="chip-group" id="cg-l1"></div>
@@ -319,9 +325,9 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     <p style="font-size:.8rem;color:var(--txt-l)" data-t="data_note">データはGoogleスプレッドシートに保存されています。全員が同じデータにアクセスできます。</p>
   </div>
   <div class="cd">
-    <div class="cd-t">🗑️ 削除履歴</div>
-    <p style="font-size:.8rem;color:var(--txt-l);margin-bottom:8px">削除したアイテムはスプレッドシートの「削除履歴」シートに保存されます。</p>
-    <button class="btn btn-p" onclick="openTrash()">🗑️ ゴミ箱を開く</button>
+    <div class="cd-t">🗑️ <span data-t="trash_title">削除履歴</span></div>
+    <p style="font-size:.8rem;color:var(--txt-l);margin-bottom:8px" data-t="trash_desc">削除したアイテムはスプレッドシートの「削除履歴」シートに保存されます。</p>
+    <button class="btn btn-p" onclick="openTrash()">🗑️ <span data-t="btn_open_trash">ゴミ箱を開く</span></button>
   </div>
   <div class="cd">
     <div class="cd-t">📊 <span data-t="log_title">操作ログ</span></div>
@@ -373,36 +379,16 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
 </div>
 </div>
 
-<!-- ===== 一括変更モーダル ===== -->
-<div class="mb" id="bulk-modal">
-<div class="md">
-  <h3>✏️ 一括変更 <span id="bulk-cnt" style="font-size:.8rem;color:var(--txt-l)"></span></h3>
-  <p style="font-size:.75rem;color:var(--txt-l);margin-bottom:8px">変更しない項目は空欄のままにしてください</p>
-  <div class="fr">
-    <div class="fg"><label>ストア場所</label><input type="text" class="fc" id="b-store" placeholder="変更しない場合は空欄"></div>
-    <div class="fg"><label>数量</label><input type="number" class="fc" id="b-qty" placeholder="変更しない場合は空欄" min="0"></div>
-  </div>
-  <div class="fr">
-    <div class="fg"><label>ロット</label><input type="text" class="fc" id="b-lot" placeholder="変更しない場合は空欄"></div>
-    <div class="fg"><label>登録日</label><input type="date" class="fc" id="b-date"></div>
-  </div>
-  <div class="md-a">
-    <button class="btn btn-ol" onclick="closeBulk()">キャンセル</button>
-    <button class="btn btn-ok" onclick="saveBulkEdit()">💾 一括変更を実行</button>
-  </div>
-</div>
-</div>
-
 <!-- ===== ゴミ箱モーダル ===== -->
 <div class="mb" id="trash-modal">
 <div class="md" style="max-width:600px">
-  <h3>🗑️ 削除履歴（ゴミ箱）<span id="trash-cnt" style="font-size:.8rem;color:var(--txt-l)"></span></h3>
+  <h3>🗑️ <span data-t="trash_modal_title">削除履歴（ゴミ箱）</span><span id="trash-cnt" style="font-size:.8rem;color:var(--txt-l)"></span></h3>
   <div id="trash-area" style="max-height:55vh;overflow-y:auto">
-    <div style="text-align:center;color:var(--txt-l);padding:16px">読み込み中...</div>
+    <div style="text-align:center;color:var(--txt-l);padding:16px" data-t="loading">読み込み中...</div>
   </div>
   <div class="md-a">
-    <button class="btn btn-ol" onclick="closeTrash()">閉じる</button>
-    <button class="btn btn-ok" onclick="restoreSelected()">♻️ 選択を復元</button>
+    <button class="btn btn-ol" onclick="closeTrash()"><span data-t="btn_close_modal">閉じる</span></button>
+    <button class="btn btn-ok" onclick="restoreSelected()">♻️ <span data-t="btn_restore">選択を復元</span></button>
   </div>
 </div>
 </div>
@@ -519,6 +505,16 @@ const L = {
     pwa_install:'追加',
     pwa_ios_guide:'📲 Safari の <b>共有ボタン ⬆️</b> →「ホーム画面に追加」でアプリ化できます',
     pwa_installed:'ホーム画面に追加しました！',
+    btn_bulk_edit:'一括変更', bulk_edit_mode:'編集モード — セル編集＋チェックで削除',
+    trash_title:'削除履歴', trash_desc:'削除したアイテムはスプレッドシートの「削除履歴」シートに保存されます。',
+    btn_open_trash:'ゴミ箱を開く', trash_modal_title:'削除履歴（ゴミ箱）',
+    btn_close_modal:'閉じる', btn_restore:'選択を復元', loading:'読み込み中...',
+    trash_empty:'ゴミ箱は空です', trash_load_fail:'取得に失敗しました',
+    trash_th_code:'商品コード', trash_th_store:'ストア場所', trash_th_qty:'数量', trash_th_deleted:'削除日時', trash_th_by:'削除者',
+    bulk_no_change:'変更はありません', bulk_confirm_change:'変更: {n}件', bulk_confirm_del:'削除: {n}件',
+    bulk_confirm_msg:'を実行します。よろしいですか？', bulk_changed:'{n}件変更', bulk_deleted:'{n}件削除',
+    bulk_done:'しました', restore_no_sel:'復元するアイテムを選択してください',
+    restore_confirm:'{n}件を復元します。よろしいですか？', restore_done:'{n}件を復元しました',
   },
   pt: {
     app_title:'Gestão de Estoque (Zona A)', items_unit:' itens',
@@ -583,6 +579,16 @@ const L = {
     pwa_install:'Adicionar',
     pwa_ios_guide:'📲 No Safari, toque em <b>Compartilhar ⬆️</b> → "Adicionar à Tela de Início"',
     pwa_installed:'Adicionado à tela inicial!',
+    btn_bulk_edit:'Edição em lote', bulk_edit_mode:'Modo edição — edite células + marque para excluir',
+    trash_title:'Histórico de Exclusão', trash_desc:'Itens excluídos são salvos na aba "削除履歴" da planilha.',
+    btn_open_trash:'Abrir lixeira', trash_modal_title:'Histórico de Exclusão (Lixeira)',
+    btn_close_modal:'Fechar', btn_restore:'Restaurar selecionados', loading:'Carregando...',
+    trash_empty:'A lixeira está vazia', trash_load_fail:'Falha ao carregar',
+    trash_th_code:'Código', trash_th_store:'Local', trash_th_qty:'Qtd', trash_th_deleted:'Data excl.', trash_th_by:'Excluído por',
+    bulk_no_change:'Nenhuma alteração', bulk_confirm_change:'Alterar: {n} itens', bulk_confirm_del:'Excluir: {n} itens',
+    bulk_confirm_msg:' — confirmar?', bulk_changed:'{n} alterados', bulk_deleted:'{n} excluídos',
+    bulk_done:'', restore_no_sel:'Selecione itens para restaurar',
+    restore_confirm:'Restaurar {n} itens?', restore_done:'{n} itens restaurados',
   }
 };
 
@@ -976,22 +982,36 @@ function renderTable(){
   if(!fi.length){tb.innerHTML='';em.style.display='block';return;}
   em.style.display='none';
 
-  tb.innerHTML=fi.map(i=>{
-    // ロケは別シートから最新値を取得（なければ元データのroke）
-    const roke=locMap[i.code]||i.roke||'';
-    return `<tr class="${selIds.has(i.id)?'sel':''}" id="row-${i.id}">
-    <td class="no-p"><div class="abtn">
-      <button class="btn btn-p btn-sm" onclick="openEd('${esc(i.id)}')">✏️</button>
-      <button class="btn btn-ng btn-sm" onclick="delItem('${esc(i.id)}')">🗑️</button>
-    </div></td>
-    <td><input type="checkbox" ${selIds.has(i.id)?'checked':''} onchange="toggleSel('${esc(i.id)}')"></td>
-    <td title="${esc(roke)}"><span class="badge badge-p">${esc(roke)}</span></td>
-    <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
-    <td title="${esc(i.store)}"><span class="badge badge-a">${esc(i.store)}</span></td>
-    <td style="text-align:right;font-weight:600">${esc(i.qty)}</td>
-    <td style="font-size:.68rem" title="${esc(i.date)}">${esc(dateOnly(i.date))}</td>
-    <td title="${esc(i.lot)}">${esc(i.lot)}</td>
-  </tr>`;}).join('');
+  if(bulkEditMode){
+    tb.innerHTML=fi.map(i=>{
+      const roke=locMap[i.code]||i.roke||'';
+      return `<tr id="row-${i.id}" data-id="${esc(i.id)}">
+      <td class="no-p" style="text-align:center;font-size:.7rem;color:var(--ng)">🗑️</td>
+      <td><input type="checkbox" class="be-del" title="削除する"></td>
+      <td title="${esc(roke)}"><span class="badge badge-p">${esc(roke)}</span></td>
+      <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
+      <td><input type="text" class="fc be-input" data-field="store" value="${esc(i.store)}" data-orig="${esc(i.store)}" style="font-size:.82rem;padding:2px 4px"></td>
+      <td><input type="number" class="fc be-input" data-field="qty" value="${esc(i.qty)}" data-orig="${esc(i.qty)}" min="0" style="font-size:.82rem;padding:2px 4px;text-align:right;width:60px"></td>
+      <td><input type="date" class="fc be-input" data-field="date" value="${bulkDateVal(i.date)}" data-orig="${bulkDateVal(i.date)}" style="font-size:.72rem;padding:2px 2px"></td>
+      <td><input type="text" class="fc be-input" data-field="lot" value="${esc(i.lot)}" data-orig="${esc(i.lot)}" style="font-size:.82rem;padding:2px 4px"></td>
+    </tr>`;}).join('');
+  } else {
+    tb.innerHTML=fi.map(i=>{
+      const roke=locMap[i.code]||i.roke||'';
+      return `<tr class="${selIds.has(i.id)?'sel':''}" id="row-${i.id}">
+      <td class="no-p"><div class="abtn">
+        <button class="btn btn-p btn-sm" onclick="openEd('${esc(i.id)}')">✏️</button>
+        <button class="btn btn-ng btn-sm" onclick="delItem('${esc(i.id)}')">🗑️</button>
+      </div></td>
+      <td><input type="checkbox" ${selIds.has(i.id)?'checked':''} onchange="toggleSel('${esc(i.id)}')"></td>
+      <td title="${esc(roke)}"><span class="badge badge-p">${esc(roke)}</span></td>
+      <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
+      <td title="${esc(i.store)}"><span class="badge badge-a">${esc(i.store)}</span></td>
+      <td style="text-align:right;font-weight:600">${esc(i.qty)}</td>
+      <td style="font-size:.68rem" title="${esc(i.date)}">${esc(dateOnly(i.date))}</td>
+      <td title="${esc(i.lot)}">${esc(i.lot)}</td>
+    </tr>`;}).join('');
+  }
 }
 
 function doSort(f){if(sortF===f)sortA=!sortA;else{sortF=f;sortA=true;}renderTable();}
@@ -1059,39 +1079,77 @@ async function deleteSelected(){
 // ============================================================
 // 一括変更
 // ============================================================
-function openBulkEdit(){
-  if(!selIds.size){showToast(t('msg_no_sel'),'ng');return;}
-  document.getElementById('b-store').value='';
-  document.getElementById('b-qty').value='';
-  document.getElementById('b-lot').value='';
-  document.getElementById('b-date').value='';
-  document.getElementById('bulk-cnt').textContent='（'+selIds.size+'件選択中）';
-  document.getElementById('bulk-modal').classList.add('act');
+let bulkEditMode=false;
+function bulkDateVal(d){
+  if(!d)return'';
+  var s=String(d);
+  if(/T.*Z$/i.test(s)){var dt=new Date(s);return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
+  return s.replace(/[\s\u3000T].*/,'').replace(/\//g,'-');
 }
-function closeBulk(){document.getElementById('bulk-modal').classList.remove('act');}
+function startBulkEdit(){
+  bulkEditMode=true;
+  document.getElementById('list-bar-normal').style.display='none';
+  document.getElementById('list-bar-edit').style.display='flex';
+  renderTable();
+}
+function cancelBulkEdit(){
+  bulkEditMode=false;
+  document.getElementById('list-bar-normal').style.display='';
+  document.getElementById('list-bar-edit').style.display='none';
+  renderTable();
+}
 async function saveBulkEdit(){
-  const st=document.getElementById('b-store').value.trim();
-  const qt=document.getElementById('b-qty').value;
-  const lt=document.getElementById('b-lot').value.trim();
-  const dt=document.getElementById('b-date').value;
-  if(!st&&!qt&&!lt&&!dt){showToast('変更する項目を入力してください','ng');return;}
-  if(!confirm(selIds.size+'件を一括変更します。よろしいですか？'))return;
-  const updates=[...selIds].map(id=>{
+  const rows=document.querySelectorAll('#tbody tr[data-id]');
+  const updates=[], delIds=[];
+  rows.forEach(tr=>{
+    const id=tr.getAttribute('data-id');
+    // 削除チェック
+    const delCb=tr.querySelector('.be-del');
+    if(delCb&&delCb.checked){delIds.push(id);return;}
+    // 変更チェック
+    const inputs=tr.querySelectorAll('.be-input');
+    let changed=false;
     const u={id};
-    if(st)u.store=st;
-    if(qt!=='')u.qty=qt;
-    if(lt)u.lot=lt;
-    if(dt)u.date=dt.replace(/-/g,'/');
-    return u;
+    inputs.forEach(inp=>{
+      const f=inp.getAttribute('data-field');
+      const v=inp.value.trim();
+      const o=inp.getAttribute('data-orig')||'';
+      if(v!==o){
+        changed=true;
+        if(f==='date')u[f]=v.replace(/-/g,'/');
+        else u[f]=v;
+      }
+    });
+    if(changed)updates.push(u);
   });
-  showLd('一括変更中...');
-  const r=await gas({action:'updateBatch',updates,user:cfg.user});
-  hideLd();
-  if(r&&r.success){
-    addLog('一括変更',r.count+'件');
-    selIds.clear();closeBulk();await syncData();
-    showToast(r.count+'件を変更しました','ok');
+  if(!updates.length&&!delIds.length){showToast(t('bulk_no_change'),'ng');return;}
+  const msgs=[];
+  if(updates.length)msgs.push(t('bulk_confirm_change',{n:updates.length}));
+  if(delIds.length)msgs.push(t('bulk_confirm_del',{n:delIds.length}));
+  if(!confirm(msgs.join('、')+t('bulk_confirm_msg')))return;
+  showLd('...');
+  let updCount=0, delCount=0;
+  if(updates.length){
+    const r=await gas({action:'updateBatch',updates,user:cfg.user});
+    if(r&&r.success)updCount=r.count;
   }
+  if(delIds.length){
+    const r=await gas({action:'moveToTrashBatch',ids:delIds,user:cfg.user});
+    if(r&&r.success)delCount=r.count;
+  }
+  hideLd();
+  const logParts=[];
+  if(updCount)logParts.push(t('bulk_changed',{n:updCount}));
+  if(delCount)logParts.push(t('bulk_deleted',{n:delCount}));
+  if(logParts.length)addLog('一括編集',logParts.join(', '));
+  bulkEditMode=false;
+  document.getElementById('list-bar-normal').style.display='';
+  document.getElementById('list-bar-edit').style.display='none';
+  await syncData();
+  const toastParts=[];
+  if(updCount)toastParts.push(t('bulk_changed',{n:updCount}));
+  if(delCount)toastParts.push(t('bulk_deleted',{n:delCount}));
+  showToast(toastParts.join('、')+t('bulk_done'),'ok');
 }
 
 // ============================================================
@@ -1104,19 +1162,19 @@ function openTrash(){
 }
 function closeTrash(){document.getElementById('trash-modal').classList.remove('act');}
 async function loadTrash(){
-  document.getElementById('trash-area').innerHTML='<div style="text-align:center;padding:16px;color:var(--txt-l)">読み込み中...</div>';
+  document.getElementById('trash-area').innerHTML='<div style="text-align:center;padding:16px;color:var(--txt-l)">'+t('loading')+'</div>';
   const r=await gas({action:'getTrash'});
-  if(!r||!r.success){document.getElementById('trash-area').innerHTML='<div style="text-align:center;padding:16px;color:var(--ng)">取得に失敗しました</div>';return;}
+  if(!r||!r.success){document.getElementById('trash-area').innerHTML='<div style="text-align:center;padding:16px;color:var(--ng)">'+t('trash_load_fail')+'</div>';return;}
   trashItems=r.items||[];trashSel.clear();
   renderTrash();
 }
 function renderTrash(){
   const area=document.getElementById('trash-area');
   document.getElementById('trash-cnt').textContent='（'+trashItems.length+'件）';
-  if(!trashItems.length){area.innerHTML='<div style="text-align:center;padding:16px;color:var(--txt-l)">ゴミ箱は空です</div>';return;}
+  if(!trashItems.length){area.innerHTML='<div style="text-align:center;padding:16px;color:var(--txt-l)">'+t('trash_empty')+'</div>';return;}
   area.innerHTML='<table style="width:100%;font-size:.78rem;border-collapse:collapse"><thead><tr style="background:var(--bg-d);color:#fff">'+
     '<th style="padding:4px"><input type="checkbox" onchange="toggleTrashAll(this.checked)"></th>'+
-    '<th style="padding:4px">商品コード</th><th style="padding:4px">ストア場所</th><th style="padding:4px">数量</th><th style="padding:4px">削除日時</th><th style="padding:4px">削除者</th>'+
+    '<th style="padding:4px">'+t('trash_th_code')+'</th><th style="padding:4px">'+t('trash_th_store')+'</th><th style="padding:4px">'+t('trash_th_qty')+'</th><th style="padding:4px">'+t('trash_th_deleted')+'</th><th style="padding:4px">'+t('trash_th_by')+'</th>'+
     '</tr></thead><tbody>'+
     trashItems.map(i=>'<tr style="border-bottom:1px solid #eee">'+
       '<td style="padding:3px"><input type="checkbox" '+(trashSel.has(i.id)?'checked':'')+' onchange="toggleTrashSel(\''+esc(i.id)+'\')"></td>'+
@@ -1130,14 +1188,14 @@ function renderTrash(){
 function toggleTrashSel(id){if(trashSel.has(id))trashSel.delete(id);else trashSel.add(id);renderTrash();}
 function toggleTrashAll(c){if(c)trashItems.forEach(i=>trashSel.add(i.id));else trashSel.clear();renderTrash();}
 async function restoreSelected(){
-  if(!trashSel.size){showToast('復元するアイテムを選択してください','ng');return;}
-  if(!confirm(trashSel.size+'件を復元します。よろしいですか？'))return;
-  showLd('復元中...');
+  if(!trashSel.size){showToast(t('restore_no_sel'),'ng');return;}
+  if(!confirm(t('restore_confirm',{n:trashSel.size})))return;
+  showLd('...');
   const r=await gas({action:'restoreFromTrash',ids:[...trashSel],user:cfg.user});
   hideLd();
   if(r&&r.success){
-    addLog('復元',r.count+'件');
-    showToast(r.count+'件を復元しました','ok');
+    addLog('復元/Restaurar',r.count);
+    showToast(t('restore_done',{n:r.count}),'ok');
     trashSel.clear();await loadTrash();await syncData();
   }
 }
