@@ -200,6 +200,7 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     <div class="fb">
       <input type="text" class="fc" id="srch" placeholder="🔍" oninput="renderTable()" data-t-ph="search_ph" style="flex:1;min-width:120px">
       <button class="btn btn-p btn-sm" onclick="syncData()">🔄 <span data-t="btn_refresh">更新</span></button>
+      <button class="btn btn-a btn-sm" onclick="openBulkEdit()">✏️ 一括変更</button>
       <button class="btn btn-ng btn-sm" onclick="deleteSelected()">🗑️ <span data-t="btn_del_sel">選択削除</span></button>
     </div>
     <span class="chip-group-label">🏷️ <span data-t="filter_l1">エリア（ロケ左1文字）</span></span>
@@ -318,6 +319,11 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     <p style="font-size:.8rem;color:var(--txt-l)" data-t="data_note">データはGoogleスプレッドシートに保存されています。全員が同じデータにアクセスできます。</p>
   </div>
   <div class="cd">
+    <div class="cd-t">🗑️ 削除履歴</div>
+    <p style="font-size:.8rem;color:var(--txt-l);margin-bottom:8px">削除したアイテムはスプレッドシートの「削除履歴」シートに保存されます。</p>
+    <button class="btn btn-p" onclick="openTrash()">🗑️ ゴミ箱を開く</button>
+  </div>
+  <div class="cd">
     <div class="cd-t">📊 <span data-t="log_title">操作ログ</span></div>
     <div id="log-area" style="max-height:220px;overflow-y:auto"><div style="text-align:center;color:var(--txt-l);padding:6px" data-t="no_log">ログはありません</div></div>
   </div>
@@ -363,6 +369,40 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
   <div class="md-a">
     <button class="btn btn-ol" onclick="closeMd()"><span data-t="btn_cancel">キャンセル</span></button>
     <button class="btn btn-ok" onclick="saveEdit()">💾 <span data-t="btn_save">保存</span></button>
+  </div>
+</div>
+</div>
+
+<!-- ===== 一括変更モーダル ===== -->
+<div class="mb" id="bulk-modal">
+<div class="md">
+  <h3>✏️ 一括変更 <span id="bulk-cnt" style="font-size:.8rem;color:var(--txt-l)"></span></h3>
+  <p style="font-size:.75rem;color:var(--txt-l);margin-bottom:8px">変更しない項目は空欄のままにしてください</p>
+  <div class="fr">
+    <div class="fg"><label>ストア場所</label><input type="text" class="fc" id="b-store" placeholder="変更しない場合は空欄"></div>
+    <div class="fg"><label>数量</label><input type="number" class="fc" id="b-qty" placeholder="変更しない場合は空欄" min="0"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>ロット</label><input type="text" class="fc" id="b-lot" placeholder="変更しない場合は空欄"></div>
+    <div class="fg"><label>登録日</label><input type="date" class="fc" id="b-date"></div>
+  </div>
+  <div class="md-a">
+    <button class="btn btn-ol" onclick="closeBulk()">キャンセル</button>
+    <button class="btn btn-ok" onclick="saveBulkEdit()">💾 一括変更を実行</button>
+  </div>
+</div>
+</div>
+
+<!-- ===== ゴミ箱モーダル ===== -->
+<div class="mb" id="trash-modal">
+<div class="md" style="max-width:600px">
+  <h3>🗑️ 削除履歴（ゴミ箱）<span id="trash-cnt" style="font-size:.8rem;color:var(--txt-l)"></span></h3>
+  <div id="trash-area" style="max-height:55vh;overflow-y:auto">
+    <div style="text-align:center;color:var(--txt-l);padding:16px">読み込み中...</div>
+  </div>
+  <div class="md-a">
+    <button class="btn btn-ol" onclick="closeTrash()">閉じる</button>
+    <button class="btn btn-ok" onclick="restoreSelected()">♻️ 選択を復元</button>
   </div>
 </div>
 </div>
@@ -1006,14 +1046,100 @@ renderTable=function(){_origRender();initColResize();};
 // ============================================================
 async function delItem(id){
   if(!confirm(t('confirm_del')))return;
-  showLd('...');const r=await gas({action:'delete',id});hideLd();
+  showLd('...');const r=await gas({action:'moveToTrash',id,user:cfg.user});hideLd();
   if(r&&r.success){addLog('削除/Excluir',items.find(i=>i.id===id)?.code||'?');await syncData();showToast(t('msg_deleted'),'ok');}
 }
 async function deleteSelected(){
   if(!selIds.size){showToast(t('msg_no_sel'),'ng');return;}
   if(!confirm(t('confirm_del_n',{n:selIds.size})))return;
-  showLd('...');const r=await gas({action:'deleteBatch',ids:[...selIds]});hideLd();
+  showLd('...');const r=await gas({action:'moveToTrashBatch',ids:[...selIds],user:cfg.user});hideLd();
   if(r&&r.success){addLog('一括削除/Excluir lote',r.count+'件');selIds.clear();await syncData();showToast(t('msg_deleted'),'ok');}
+}
+
+// ============================================================
+// 一括変更
+// ============================================================
+function openBulkEdit(){
+  if(!selIds.size){showToast(t('msg_no_sel'),'ng');return;}
+  document.getElementById('b-store').value='';
+  document.getElementById('b-qty').value='';
+  document.getElementById('b-lot').value='';
+  document.getElementById('b-date').value='';
+  document.getElementById('bulk-cnt').textContent='（'+selIds.size+'件選択中）';
+  document.getElementById('bulk-modal').classList.add('act');
+}
+function closeBulk(){document.getElementById('bulk-modal').classList.remove('act');}
+async function saveBulkEdit(){
+  const st=document.getElementById('b-store').value.trim();
+  const qt=document.getElementById('b-qty').value;
+  const lt=document.getElementById('b-lot').value.trim();
+  const dt=document.getElementById('b-date').value;
+  if(!st&&!qt&&!lt&&!dt){showToast('変更する項目を入力してください','ng');return;}
+  if(!confirm(selIds.size+'件を一括変更します。よろしいですか？'))return;
+  const updates=[...selIds].map(id=>{
+    const u={id};
+    if(st)u.store=st;
+    if(qt!=='')u.qty=qt;
+    if(lt)u.lot=lt;
+    if(dt)u.date=dt.replace(/-/g,'/');
+    return u;
+  });
+  showLd('一括変更中...');
+  const r=await gas({action:'updateBatch',updates,user:cfg.user});
+  hideLd();
+  if(r&&r.success){
+    addLog('一括変更',r.count+'件');
+    selIds.clear();closeBulk();await syncData();
+    showToast(r.count+'件を変更しました','ok');
+  }
+}
+
+// ============================================================
+// ゴミ箱（削除履歴）
+// ============================================================
+let trashItems=[], trashSel=new Set();
+function openTrash(){
+  document.getElementById('trash-modal').classList.add('act');
+  loadTrash();
+}
+function closeTrash(){document.getElementById('trash-modal').classList.remove('act');}
+async function loadTrash(){
+  document.getElementById('trash-area').innerHTML='<div style="text-align:center;padding:16px;color:var(--txt-l)">読み込み中...</div>';
+  const r=await gas({action:'getTrash'});
+  if(!r||!r.success){document.getElementById('trash-area').innerHTML='<div style="text-align:center;padding:16px;color:var(--ng)">取得に失敗しました</div>';return;}
+  trashItems=r.items||[];trashSel.clear();
+  renderTrash();
+}
+function renderTrash(){
+  const area=document.getElementById('trash-area');
+  document.getElementById('trash-cnt').textContent='（'+trashItems.length+'件）';
+  if(!trashItems.length){area.innerHTML='<div style="text-align:center;padding:16px;color:var(--txt-l)">ゴミ箱は空です</div>';return;}
+  area.innerHTML='<table style="width:100%;font-size:.78rem;border-collapse:collapse"><thead><tr style="background:var(--bg-d);color:#fff">'+
+    '<th style="padding:4px"><input type="checkbox" onchange="toggleTrashAll(this.checked)"></th>'+
+    '<th style="padding:4px">商品コード</th><th style="padding:4px">ストア場所</th><th style="padding:4px">数量</th><th style="padding:4px">削除日時</th><th style="padding:4px">削除者</th>'+
+    '</tr></thead><tbody>'+
+    trashItems.map(i=>'<tr style="border-bottom:1px solid #eee">'+
+      '<td style="padding:3px"><input type="checkbox" '+(trashSel.has(i.id)?'checked':'')+' onchange="toggleTrashSel(\''+esc(i.id)+'\')"></td>'+
+      '<td style="padding:3px"><strong>'+esc(i.code)+'</strong></td>'+
+      '<td style="padding:3px">'+esc(i.store)+'</td>'+
+      '<td style="padding:3px;text-align:right">'+esc(i.qty)+'</td>'+
+      '<td style="padding:3px;font-size:.7rem;color:#888">'+esc(dateOnly(i.deletedAt))+'</td>'+
+      '<td style="padding:3px;font-size:.7rem">'+esc(i.deletedBy)+'</td>'+
+    '</tr>').join('')+'</tbody></table>';
+}
+function toggleTrashSel(id){if(trashSel.has(id))trashSel.delete(id);else trashSel.add(id);renderTrash();}
+function toggleTrashAll(c){if(c)trashItems.forEach(i=>trashSel.add(i.id));else trashSel.clear();renderTrash();}
+async function restoreSelected(){
+  if(!trashSel.size){showToast('復元するアイテムを選択してください','ng');return;}
+  if(!confirm(trashSel.size+'件を復元します。よろしいですか？'))return;
+  showLd('復元中...');
+  const r=await gas({action:'restoreFromTrash',ids:[...trashSel],user:cfg.user});
+  hideLd();
+  if(r&&r.success){
+    addLog('復元',r.count+'件');
+    showToast(r.count+'件を復元しました','ok');
+    trashSel.clear();await loadTrash();await syncData();
+  }
 }
 
 function openEd(id){
