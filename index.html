@@ -66,7 +66,7 @@ th:nth-child(1){width:50px}th:nth-child(2){width:28px}th:nth-child(3){width:56px
 /* カラムリサイズハンドル */
 .col-resize{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:transparent;z-index:2}
 .col-resize:hover,.col-resize.active{background:rgba(255,255,255,.4)}
-tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
+tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}tr.del-mark{background:#fde2e2;opacity:.7}tr.del-mark td{text-decoration:line-through;color:#c0392b}
 .fb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .fb .fc{width:auto;flex:1;min-width:100px}.fb select{max-width:170px}
 .badge{display:inline-block;padding:2px 6px;border-radius:9px;font-size:.7rem;font-weight:600}
@@ -248,8 +248,11 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}
     <div style="margin-bottom:10px;padding:10px;background:#eaf7ee;border-radius:8px;border:1px solid #c3e6cb">
       <div style="font-size:.82rem;font-weight:600;color:var(--ok);margin-bottom:6px">📤 検品データインポート</div>
       <p style="font-size:.72rem;color:var(--txt-l);margin-bottom:6px">なんでも検品等のExcelファイルを読み込みます。<br>midasi_cdに「-」を含む行 → ストア場所として登録</p>
-      <button class="btn btn-ok" onclick="document.getElementById('kenpin-f').click()">📤 検品Excelを選択</button>
+      <button class="btn btn-ok" onclick="document.getElementById('kenpin-f').click()">📤 <span data-t="btn_kenpin">検品Excelを選択</span></button>
       <input type="file" id="kenpin-f" accept=".xlsx,.xls,.csv" style="display:none" onchange="importKenpin(event)">
+      <div id="last-import-info" style="display:none;margin-top:6px;padding:5px 8px;background:#fff;border-radius:6px;font-size:.75rem;color:var(--txt-l);border:1px solid #c3e6cb">
+        📄 <span data-t="last_import">前回インポート</span>: <strong id="last-import-name"></strong> <span id="last-import-time" style="color:#888"></span>
+      </div>
     </div>
 
     <!-- STEP1: 商品コード -->
@@ -515,6 +518,7 @@ const L = {
     bulk_confirm_msg:'を実行します。よろしいですか？', bulk_changed:'{n}件変更', bulk_deleted:'{n}件削除',
     bulk_done:'しました', restore_no_sel:'復元するアイテムを選択してください',
     restore_confirm:'{n}件を復元します。よろしいですか？', restore_done:'{n}件を復元しました',
+    btn_kenpin:'検品Excelを選択', last_import:'前回インポート',
   },
   pt: {
     app_title:'Gestão de Estoque (Zona A)', items_unit:' itens',
@@ -589,6 +593,7 @@ const L = {
     bulk_confirm_msg:' — confirmar?', bulk_changed:'{n} alterados', bulk_deleted:'{n} excluídos',
     bulk_done:'', restore_no_sel:'Selecione itens para restaurar',
     restore_confirm:'Restaurar {n} itens?', restore_done:'{n} itens restaurados',
+    btn_kenpin:'Selecionar Excel de inspeção', last_import:'Último import',
   }
 };
 
@@ -698,6 +703,7 @@ function init(){
     document.getElementById('st-url').value=cfg.url||'';
     document.getElementById('st-user').value=cfg.user;
     restoreFilter();
+    showLastImport();
     syncData();
   }
 }
@@ -987,7 +993,7 @@ function renderTable(){
       const roke=locMap[i.code]||i.roke||'';
       return `<tr id="row-${i.id}" data-id="${esc(i.id)}">
       <td class="no-p" style="text-align:center;font-size:.7rem;color:var(--ng)">🗑️</td>
-      <td><input type="checkbox" class="be-del" title="削除する"></td>
+      <td><input type="checkbox" class="be-del" title="削除する" onchange="toggleDelMark(this)"></td>
       <td title="${esc(roke)}"><span class="badge badge-p">${esc(roke)}</span></td>
       <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
       <td><input type="text" class="fc be-input" data-field="store" value="${esc(i.store)}" data-orig="${esc(i.store)}" style="font-size:.82rem;padding:2px 4px"></td>
@@ -1086,6 +1092,7 @@ function bulkDateVal(d){
   if(/T.*Z$/i.test(s)){var dt=new Date(s);return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
   return s.replace(/[\s\u3000T].*/,'').replace(/\//g,'-');
 }
+function toggleDelMark(cb){const tr=cb.closest('tr');if(cb.checked)tr.classList.add('del-mark');else tr.classList.remove('del-mark');}
 function startBulkEdit(){
   bulkEditMode=true;
   document.getElementById('list-bar-normal').style.display='none';
@@ -1506,6 +1513,24 @@ async function importExcel(ev){
 }
 
 // ============================================================
+// インポート履歴
+// ============================================================
+function saveLastImport(name,count){
+  const info={name,count,time:nowStr()};
+  localStorage.setItem('last_import',JSON.stringify(info));
+  showLastImport();
+}
+function showLastImport(){
+  try{
+    const s=localStorage.getItem('last_import');if(!s)return;
+    const info=JSON.parse(s);
+    document.getElementById('last-import-name').textContent=info.name+' ('+info.count+t('items_unit')+')';
+    document.getElementById('last-import-time').textContent=info.time;
+    document.getElementById('last-import-info').style.display='block';
+  }catch(e){}
+}
+
+// ============================================================
 // 検品データインポート（なんでも検品 形式）
 // midasi_cdに「-」を含む行 → store（ストア場所）として扱う
 // syouhin_cd → code, jisseki_su → qty, kenpin_date → date
@@ -1568,6 +1593,7 @@ async function importKenpin(ev){
       }
       hideLd();
       addLog('検品Import',file.name+' '+total+'件'+(fail?' (失敗:'+fail+')':''));
+      saveLastImport(file.name, total);
       await syncData();
       if(fail) showToast('✅ '+total+'件成功 / ❌ '+fail+'件失敗','ng');
       else showToast(total+'件をインポートしました','ok');
