@@ -396,6 +396,19 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}tr.del-mark{background:#fd
 </div>
 </div>
 
+<!-- ===== ロケ登録モーダル ===== -->
+<div class="mb" id="loc-modal">
+<div class="md" style="max-width:600px">
+  <h3>📍 <span data-t="loc_modal_title">ロケ未登録の商品</span><span id="loc-cnt" style="font-size:.8rem;color:var(--txt-l)"></span></h3>
+  <p style="font-size:.75rem;color:var(--txt-l);margin-bottom:8px" data-t="loc_modal_desc">以下の商品はロケシートに登録がありません。ロケを入力して保存してください。</p>
+  <div id="loc-area" style="max-height:55vh;overflow-y:auto"></div>
+  <div class="md-a">
+    <button class="btn btn-ol" onclick="closeLocModal()"><span data-t="loc_later">後で入力する</span></button>
+    <button class="btn btn-ok" onclick="saveLocEntries()">💾 <span data-t="loc_save">ロケを保存</span></button>
+  </div>
+</div>
+</div>
+
 <!-- PWA インストールバナー -->
 <div class="pwa-banner" id="pwa-banner">
   <span id="pwa-msg">📲 ホーム画面に追加してアプリとして使えます</span>
@@ -519,6 +532,10 @@ const L = {
     bulk_done:'しました', restore_no_sel:'復元するアイテムを選択してください',
     restore_confirm:'{n}件を復元します。よろしいですか？', restore_done:'{n}件を復元しました',
     btn_kenpin:'検品Excelを選択', last_import:'前回インポート',
+    loc_modal_title:'ロケ未登録の商品', loc_modal_desc:'以下の商品はロケシートに登録がありません。ロケを入力して保存してください。',
+    loc_later:'後で入力する', loc_save:'ロケを保存', loc_th_code:'商品コード', loc_th_loc:'ロケーション',
+    loc_no_input:'ロケが入力された商品がありません', loc_saved:'{n}件のロケを登録しました',
+    loc_prompt:'ロケ未登録の商品が{n}件あります。ロケを入力しますか？',
   },
   pt: {
     app_title:'Gestão de Estoque (Zona A)', items_unit:' itens',
@@ -594,6 +611,10 @@ const L = {
     bulk_done:'', restore_no_sel:'Selecione itens para restaurar',
     restore_confirm:'Restaurar {n} itens?', restore_done:'{n} itens restaurados',
     btn_kenpin:'Selecionar Excel de inspeção', last_import:'Último import',
+    loc_modal_title:'Produtos sem localização', loc_modal_desc:'Os produtos abaixo não têm localização registrada. Digite a localização e salve.',
+    loc_later:'Depois', loc_save:'Salvar localizações', loc_th_code:'Código', loc_th_loc:'Localização',
+    loc_no_input:'Nenhuma localização inserida', loc_saved:'{n} localizações registradas',
+    loc_prompt:'{n} produtos sem localização. Deseja registrar?',
   }
 };
 
@@ -1531,6 +1552,53 @@ function showLastImport(){
 }
 
 // ============================================================
+// ロケ未登録チェック＆登録
+// ============================================================
+let pendingLocCodes=[];
+function checkMissingLoc(codes){
+  // 重複排除して、locMapにないものを抽出
+  const unique=[...new Set(codes.map(c=>String(c).trim()).filter(Boolean))];
+  pendingLocCodes=unique.filter(c=>!locMap[c]);
+  if(!pendingLocCodes.length)return;
+  // モーダルを表示
+  openLocModal();
+}
+function openLocModal(){
+  document.getElementById('loc-cnt').textContent='（'+pendingLocCodes.length+t('items_unit')+'）';
+  const area=document.getElementById('loc-area');
+  area.innerHTML='<table style="width:100%;font-size:.82rem;border-collapse:collapse"><thead><tr style="background:var(--bg-d);color:#fff">'+
+    '<th style="padding:4px">'+t('loc_th_code')+'</th><th style="padding:4px">'+t('loc_th_loc')+'</th>'+
+    '</tr></thead><tbody>'+
+    pendingLocCodes.map(c=>'<tr style="border-bottom:1px solid #eee">'+
+      '<td style="padding:4px"><strong>'+esc(c)+'</strong></td>'+
+      '<td style="padding:4px"><input type="text" class="fc loc-input" data-code="'+esc(c)+'" placeholder="ロケを入力" style="font-size:.85rem;padding:3px 6px"></td>'+
+    '</tr>').join('')+'</tbody></table>';
+  document.getElementById('loc-modal').classList.add('act');
+}
+function closeLocModal(){document.getElementById('loc-modal').classList.remove('act');}
+async function saveLocEntries(){
+  const inputs=document.querySelectorAll('.loc-input');
+  const entries=[];
+  inputs.forEach(inp=>{
+    const code=inp.getAttribute('data-code');
+    const loc=inp.value.trim();
+    if(code&&loc)entries.push({code,location:loc});
+  });
+  if(!entries.length){showToast(t('loc_no_input'),'ng');return;}
+  showLd('...');
+  const r=await gas({action:'addLocations',entries});
+  hideLd();
+  if(r&&r.success){
+    // locMapを更新
+    entries.forEach(e=>{locMap[e.code]=e.location;});
+    addLog('ロケ登録/Loc Reg',r.count+'件');
+    closeLocModal();
+    renderTable();
+    showToast(t('loc_saved',{n:r.count}),'ok');
+  }
+}
+
+// ============================================================
 // 検品データインポート（なんでも検品 形式）
 // midasi_cdに「-」を含む行 → store（ストア場所）として扱う
 // syouhin_cd → code, jisseki_su → qty, kenpin_date → date
@@ -1597,6 +1665,9 @@ async function importKenpin(ev){
       await syncData();
       if(fail) showToast('✅ '+total+'件成功 / ❌ '+fail+'件失敗','ng');
       else showToast(total+'件をインポートしました','ok');
+      // ロケ未登録チェック
+      const importedCodes=ni.map(i=>i.code);
+      checkMissingLoc(importedCodes);
     }catch(err){hideLd();showToast('Error: '+err.message,'ng');}
   };
   reader.readAsArrayBuffer(file);ev.target.value='';
