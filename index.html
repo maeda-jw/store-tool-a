@@ -1411,20 +1411,20 @@ function doPrint(html){
   const w=window.open('','_blank','width=800,height=600');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>印刷</title>
   <style>
-    body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;color:#222;padding:2mm;font-size:10px;line-height:1.2}
+    body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;color:#222;padding:20mm 15mm 5mm 15mm;font-size:10px;line-height:1.2}
     h2{font-size:13px;text-align:center;margin:0 0 2px}
     .sub{text-align:center;color:#666;font-size:9px;margin-bottom:3px}
-    table{width:100%;border-collapse:collapse}
-    th{background:#333;color:#fff;padding:1px 2px;text-align:left;font-weight:600;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    table{margin:0 auto;border-collapse:collapse}
+    th{background:#333;color:#fff;padding:1px 4px;text-align:left;font-weight:600;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     th.main{font-size:13px}
     th.sub2{font-size:7px}
-    td{padding:1px 2px;border-bottom:1px solid #ddd}
+    td{padding:1px 4px;border-bottom:1px solid #ddd;white-space:nowrap}
     td.main{font-size:16px;font-weight:600}
     td.sub2{font-size:7px;color:#888}
     td.qty{font-size:18px;font-weight:700;text-align:right}
     tr:nth-child(even){background:#f8f8f8}
-    .tot{text-align:right;font-size:9px;color:#666;margin-top:2px}
-    @media print{body{padding:0}@page{size:A4 portrait;margin:4mm}}
+    .tot{text-align:center;font-size:9px;color:#666;margin-top:2px}
+    @media print{body{padding:0}@page{size:A4 portrait;margin:20mm 15mm 5mm 15mm}}
   </style></head><body>${html}</body></html>`);
   w.document.close();
   setTimeout(()=>{w.print();},400);
