@@ -49,6 +49,7 @@ body{font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;back
 .btn-ok{background:var(--ok);color:#fff}.btn-ok:hover:not(:disabled){background:#219a52}
 .btn-ng{background:var(--ng);color:#fff}.btn-ng:hover:not(:disabled){background:#c0392b}
 .btn-ac{background:var(--acc);color:#fff}.btn-ac:hover:not(:disabled){background:#d35400}
+.btn-i{background:#8e44ad;color:#fff}.btn-i:hover:not(:disabled){background:#7d3c98}
 .btn-ol{background:transparent;border:2px solid var(--pri);color:var(--pri)}.btn-ol:hover:not(:disabled){background:var(--pri);color:#fff}
 .btn-close{background:#95a5a6;color:#fff}.btn-close:hover{background:#7f8c8d}
 .btn-sm{padding:5px 9px;font-size:.76rem}.btn-lg{padding:11px 20px;font-size:.95rem}.btn-bk{width:100%;justify-content:center}
@@ -310,6 +311,7 @@ tr:hover{background:#f0f4f8}tr.sel{background:#d5e8f7}tr.del-mark{background:#fd
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
       <button class="btn btn-p btn-lg" onclick="printByStore()">📍 <span data-t="print_store">ストア場所別</span></button>
       <button class="btn btn-ac btn-lg" onclick="printByRoke()">📦 <span data-t="print_roke">ロケーション別</span></button>
+      <button class="btn btn-i btn-lg" onclick="printByCode()">🔢 <span data-t="print_code">商品コード順</span></button>
       <button class="btn btn-ol btn-lg" onclick="printAll()">📋 <span data-t="print_all">全件一覧</span></button>
     </div>
   </div>
@@ -470,7 +472,7 @@ const L = {
     btn_camera:'カメラを起動する', btn_camera_stop:'カメラを停止する', or_manual:'または手入力',
     lbl_code:'商品コード', lbl_roke:'ロケ', lbl_store:'ストア場所', lbl_qty:'数量', lbl_lot:'ロット',
     scan_ok:'読取成功', btn_register:'登録する', scan_hist:'スキャン履歴', no_hist:'履歴はありません',
-    print_title:'印刷オプション', print_store:'ストア場所別', print_roke:'ロケーション別', print_zone:'ゾーン別（ロケ左2文字）', print_all:'全件一覧',
+    print_title:'印刷オプション', print_store:'ストア場所別', print_roke:'ロケーション別', print_code:'商品コード順', print_zone:'ゾーン別（ロケ左2文字）', print_all:'全件一覧',
     data_title:'データ管理', btn_export:'Excelエクスポート', btn_import:'Excelインポート',
     data_note:'データはGoogleスプレッドシートに保存されています。全員が同じデータにアクセスできます。',
     log_title:'操作ログ', no_log:'ログはありません',
@@ -549,7 +551,7 @@ const L = {
     btn_camera:'Iniciar câmera', btn_camera_stop:'Parar câmera', or_manual:'ou digitação manual',
     lbl_code:'Código do Produto', lbl_roke:'Localização', lbl_store:'Local de Estoque', lbl_qty:'Quantidade', lbl_lot:'Lote',
     scan_ok:'Leitura OK', btn_register:'Registrar', scan_hist:'Histórico de Scan', no_hist:'Sem histórico',
-    print_title:'Opções de Impressão', print_store:'Por Local', print_roke:'Por Localização', print_zone:'Por Zona (2 primeiros caracteres)', print_all:'Lista Completa',
+    print_title:'Opções de Impressão', print_store:'Por Local', print_roke:'Por Localização', print_code:'Por Código', print_zone:'Por Zona (2 primeiros caracteres)', print_all:'Lista Completa',
     data_title:'Gestão de Dados', btn_export:'Exportar Excel', btn_import:'Importar Excel',
     data_note:'Os dados estão salvos no Google Sheets. Todos acessam os mesmos dados.',
     log_title:'Log de Operações', no_log:'Sem registros',
@@ -1474,6 +1476,13 @@ function printByRoke(){
   const src=getPrintData();
   src.sort((a,b)=>(getRoke(a)).localeCompare(getRoke(b)));
   let h=`<h2>ロケーション別一覧</h2><div class="sub">${nowStr()} / ${src.length}件</div>${mkPTbl(src)}`;
+  doPrint(h);
+}
+
+function printByCode(){
+  const src=getPrintData();
+  src.sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  let h=`<h2>商品コード順一覧</h2><div class="sub">${nowStr()} / ${src.length}件</div>${mkPTbl(src)}`;
   doPrint(h);
 }
 
