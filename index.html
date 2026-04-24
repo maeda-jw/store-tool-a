@@ -1020,7 +1020,7 @@ function renderTable(){
       <td title="${esc(roke)}"><span class="badge badge-p">${esc(roke)}</span></td>
       <td title="${esc(i.code)}"><strong>${esc(i.code)}</strong></td>
       <td><input type="text" class="fc be-input" data-field="store" value="${esc(i.store)}" data-orig="${esc(i.store)}" style="font-size:.82rem;padding:2px 4px"></td>
-      <td><input type="number" class="fc be-input" data-field="qty" value="${esc(i.qty)}" data-orig="${esc(i.qty)}" min="0" style="font-size:.82rem;padding:2px 4px;text-align:right;width:60px"></td>
+      <td><input type="text" inputmode="numeric" pattern="[0-9]*" class="fc be-input" data-field="qty" value="${esc(i.qty)}" data-orig="${esc(i.qty)}" style="font-size:.82rem;padding:2px 4px;text-align:right;width:60px"></td>
       <td><input type="date" class="fc be-input" data-field="date" value="${bulkDateVal(i.date)}" data-orig="${bulkDateVal(i.date)}" style="font-size:.72rem;padding:2px 2px"></td>
       <td><input type="text" class="fc be-input" data-field="lot" value="${esc(i.lot)}" data-orig="${esc(i.lot)}" style="font-size:.82rem;padding:2px 4px"></td>
     </tr>`;}).join('');
